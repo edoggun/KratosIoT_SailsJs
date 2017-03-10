@@ -1,3 +1,3 @@
-# test-project
+# management_sails
 
 a [Sails](http://sailsjs.org) application
