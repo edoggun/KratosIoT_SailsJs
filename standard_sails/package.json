@@ -1,5 +1,5 @@
 {
-  "name": "management_sails",
+  "name": "standard_sails",
   "private": true,
   "version": "0.0.0",
   "description": "a Sails application",
@@ -31,7 +31,7 @@
   "main": "app.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/anonymous node/sails user/management_sails.git"
+    "url": "git://github.com/anonymous node/sails user/standard_sails.git"
   },
   "author": "anonymous node/sails user",
   "license": ""
