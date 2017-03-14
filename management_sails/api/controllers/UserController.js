@@ -5,16 +5,37 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
+var mkdirp = require('mkdirp');
+var rimraf = require('rimraf');
+
 module.exports = {
 	
-
-
+  
   /**
    * `UserController.create()`
    */
   create: function (req, res) {
+    var params = req.params.all();
+    var userName = params.userName;
+    // Creating user folder and APIs folder under it
+    mkdirp('../Users/' + userName + '/APIs', function (err) {
+        if (err) { return res.serverError(err); } 
+        
+        // Creating APPs folder under user folder
+        mkdirp('../Users/' + userName + '/APPs', function (err) {
+          if (err) { return res.serverError(err); }
+
+          // Inserting user into DB
+          User.create({userName: userName}).exec(function (err) {
+            if (err) { return res.serverError(err); }
+          });
+
+        });
+
+    });
+
     return res.json({
-      todo: 'create() is not implemented yet!'
+      response: 'User ' + userName + ' successfully created'
     });
   },
 
@@ -33,8 +54,15 @@ module.exports = {
    * `UserController.delete()`
    */
   delete: function (req, res) {
+    var params = req.params.all();
+    var userName = params.userName;
+
+    rimraf('../Users/' + userName, function (err) { 
+      if (err) { return res.serverError(err); } 
+    });
+
     return res.json({
-      todo: 'delete() is not implemented yet!'
+      response: 'User ' + userName + ' successfully removed'
     });
   },
 
