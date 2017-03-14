@@ -1,7 +1,7 @@
 /**
- * ThingAPIController
+ * SensorAPIController
  *
- * @description :: Server-side logic for managing Thingapis
+ * @description :: Server-side logic for managing Sensorapis
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
@@ -10,17 +10,17 @@ module.exports = {
 
 
   /**
-   * `ThingAPIController.createDefinition()`
+   * `SensorAPIController.insertDefinition()`
    */
-  createDefinition: function (req, res) {
+  insertDefinition: function (req, res) {
     return res.json({
-      todo: 'createDefinition() is not implemented yet!'
+      todo: 'insertDefinition() is not implemented yet!'
     });
   },
 
 
   /**
-   * `ThingAPIController.createCollection()`
+   * `SensorAPIController.createCollection()`
    */
   createCollection: function (req, res) {
     return res.json({

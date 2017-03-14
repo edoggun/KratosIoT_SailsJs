@@ -10,11 +10,11 @@ module.exports = {
 
 
   /**
-   * `DeviceAPIController.createDefinition()`
+   * `DeviceAPIController.insertDefinition()`
    */
-  createDefinition: function (req, res) {
+  insertDefinition: function (req, res) {
     return res.json({
-      todo: 'createDefinition() is not implemented yet!'
+      todo: 'insertDefinition() is not implemented yet!'
     });
   },
 

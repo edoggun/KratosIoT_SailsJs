@@ -1,7 +1,7 @@
 /**
- * SensorAPIController
+ * GatewayAPIController
  *
- * @description :: Server-side logic for managing Sensorapis
+ * @description :: Server-side logic for managing Gatewayapis
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
@@ -10,17 +10,17 @@ module.exports = {
 
 
   /**
-   * `SensorAPIController.createDefinition()`
+   * `GatewayAPIController.insertDefinition()`
    */
-  createDefinition: function (req, res) {
+  insertDefinition: function (req, res) {
     return res.json({
-      todo: 'createDefinition() is not implemented yet!'
+      todo: 'insertDefinition() is not implemented yet!'
     });
   },
 
 
   /**
-   * `SensorAPIController.createCollection()`
+   * `GatewayAPIController.createCollection()`
    */
   createCollection: function (req, res) {
     return res.json({

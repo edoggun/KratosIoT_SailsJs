@@ -1,7 +1,7 @@
 /**
- * GatewayAPIController
+ * ThingAPIController
  *
- * @description :: Server-side logic for managing Gatewayapis
+ * @description :: Server-side logic for managing Thingapis
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
@@ -10,17 +10,17 @@ module.exports = {
 
 
   /**
-   * `GatewayAPIController.createDefinition()`
+   * `ThingAPIController.insertDefinition()`
    */
-  createDefinition: function (req, res) {
+  insertDefinition: function (req, res) {
     return res.json({
-      todo: 'createDefinition() is not implemented yet!'
+      todo: 'insertDefinition() is not implemented yet!'
     });
   },
 
 
   /**
-   * `GatewayAPIController.createCollection()`
+   * `ThingAPIController.createCollection()`
    */
   createCollection: function (req, res) {
     return res.json({
