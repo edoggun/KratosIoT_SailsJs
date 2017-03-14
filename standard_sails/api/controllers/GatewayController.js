@@ -1,7 +1,7 @@
 /**
- * GenericAPIController
+ * GatewayController
  *
- * @description :: Server-side logic for managing Genericapis
+ * @description :: Server-side logic for managing Gateways
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
@@ -10,7 +10,7 @@ module.exports = {
 
 
   /**
-   * `GenericAPIController.sendMessage()`
+   * `GatewayController.sendMessage()`
    */
   sendMessage: function (req, res) {
     return res.json({
@@ -20,7 +20,7 @@ module.exports = {
 
 
   /**
-   * `GenericAPIController.getLatestMessage()`
+   * `GatewayController.getLatestMessage()`
    */
   getLatestMessage: function (req, res) {
     return res.json({
@@ -30,21 +30,21 @@ module.exports = {
 
 
   /**
-   * `GenericAPIController.getMessageWithInterval()`
+   * `GatewayController.getMessagesWithInterval()`
    */
-  getMessageWithInterval: function (req, res) {
+  getMessagesWithInterval: function (req, res) {
     return res.json({
-      todo: 'getMessageWithInterval() is not implemented yet!'
+      todo: 'getMessagesWithInterval() is not implemented yet!'
     });
   },
 
 
   /**
-   * `GenericAPIController.GetMessageWithCount()`
+   * `GatewayController.getMessageWithCount()`
    */
-  GetMessageWithCount: function (req, res) {
+  getMessageWithCount: function (req, res) {
     return res.json({
-      todo: 'GetMessageWithCount() is not implemented yet!'
+      todo: 'getMessageWithCount() is not implemented yet!'
     });
   }
 };
