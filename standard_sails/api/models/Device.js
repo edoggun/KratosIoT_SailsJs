@@ -9,6 +9,12 @@ module.exports = {
 
   attributes: {
 
+    deviceName : { type: 'string' },
+
+    gatewayName : { type: 'string' },
+
+    userName : { type: 'string' },
+
     data : { type: 'json' }
 
   }

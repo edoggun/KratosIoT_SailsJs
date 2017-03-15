@@ -9,6 +9,14 @@ module.exports = {
 
   attributes: {
 
+  	sensorName : { type: 'string' },
+
+  	deviceName : { type: 'string' },
+
+    gatewayName : { type: 'string' },
+
+    userName : { type: 'string' },
+
     data : { type: 'json' }
 
   }

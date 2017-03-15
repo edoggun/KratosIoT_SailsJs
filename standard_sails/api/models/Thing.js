@@ -9,6 +9,10 @@ module.exports = {
 
   attributes: {
 
+  	thingName : { type: 'string' },
+
+    userName : { type: 'string' },
+
     data : { type: 'json' }
 
   }

@@ -59,6 +59,9 @@ module.exports = {
 
     rimraf('../Users/' + userName, function (err) { 
       if (err) { return res.serverError(err); } 
+
+      //TODO: Soft delete from DB by updating the entry column ACT->DEACT
+      
     });
 
     return res.json({
