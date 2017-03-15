@@ -9,8 +9,11 @@ module.exports = {
 
   attributes: {
 
-  	userName : { type: 'string' }
+  	userName : { type: 'string' },
+
+  	status : { type: 'string' }
   	
   }
+  
 };
 
