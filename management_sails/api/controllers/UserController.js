@@ -5,8 +5,6 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
-var mkdirp = require('mkdirp');
-var rimraf = require('rimraf');
 var fse = require('fs-extra');
 
 var Db = require('mongodb').Db,
@@ -26,12 +24,11 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
     
-
-    //-------------fs-extra------------
-    var dir1 = '../Users/' + userName + '/APIs';
-    fs.ensureDirSync(dir1);
-    var dir2 = '../Users/' + userName + '/APPs';
-    fs.ensureDirSync(dir2);
+    // Creating user folder along with APIs and APPs folders under it
+    var dirAPIs = '../Users/' + userName + '/APIs';
+    fse.ensureDirSync(dirAPIs);
+    var dirAPPs = '../Users/' + userName + '/APPs';
+    fse.ensureDirSync(dirAPPs);
 
     // Inserting user into DB
     var db = new Db('MongoDatabase', new Server('localhost', 27017));
@@ -66,21 +63,7 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
-    // Get user from DB
-    var db = new Db('MongoDatabase', new Server('localhost', 27017));
-    // Establish connection to db
-    db.open(function(err, db) {
-
-      // Add a user to the database
-      db.addUser('mehmet').then(function(result) {
-        console.log(result);
-        db.close();
-
-      });
-
-          
-    }); 
-
+    
 
     return res.json({
       todo: 'update() is not implemented yet!'
@@ -95,33 +78,32 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
 
-    rimraf('../Users/' + userName, function (err) { 
-      if (err) { return res.serverError(err); } 
+    var dir = "../Users/" + userName;
+    fse.removeSync(dir);
 
-      //Soft delete from DB by updating the entry column ACT->DEACT
-      var db = new Db('MongoDatabase', new Server('localhost', 27017));
-        // Fetch a collection to insert document into
-        db.open(function(err, db) {
+    //Soft delete from DB by updating the entry column ACT->DEACT
+    var db = new Db('MongoDatabase', new Server('localhost', 27017));
 
-          var collection = db.collection("user");
-          // Update the document with an atomic operator
-          collection.update({userName: userName}, {$set:{status: 'DEACT'}});
+    // Fetch a collection to insert document into
+    db.open(function(err, db) {
 
-          // Wait for a second before finishing up, to ensure we have written the item to disk
-          setTimeout(function() {
+      var collection = db.collection("user");
+      // Update the document with an atomic operator
+      collection.update({userName: userName}, {$set:{status: 'DEACT'}});
 
-            // Fetch the document
-            collection.findOne({userName: userName}, function(err, item) {
-              assert.equal(null, err);
-              assert.equal(userName, item.userName);
-              assert.equal('DEACT', item.status);
-              db.close();
-            })
+      // Wait for a second before finishing up, to ensure we have written the item to disk
+      setTimeout(function() {
 
-          }, 100);
+      // Fetch the document
+        collection.findOne({userName: userName}, function(err, item) {
+          assert.equal(null, err);
+          assert.equal(userName, item.userName);
+          assert.equal('DEACT', item.status);
+          db.close();
+        })
 
-        });
-      
+      }, 100);
+
     });
 
     return res.json({
