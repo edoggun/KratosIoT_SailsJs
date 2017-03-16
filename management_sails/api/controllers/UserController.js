@@ -121,9 +121,22 @@ module.exports = {
    * `UserController.get()`
    */
   get: function (req, res) {
-    return res.json({
-      todo: 'get() is not implemented yet!'
-    });
+    var params = req.params.all();
+    var userName = params.userName;
+
+    // Get user from DB
+    var db = new Db('MongoDatabase', new Server('localhost', 27017));
+    // Establish connection to db
+    db.open(function(err, db) {
+
+      
+      // Peform a simple find and return all the documents
+      db.createCollection("test", function(err, collection){
+        collection.insert({"test":"value"});
+      });
+
+    }); 
+
   },
 
 
@@ -131,9 +144,29 @@ module.exports = {
    * `UserController.getAll()`
    */
   getAll: function (req, res) {
-    return res.json({
-      todo: 'getAll() is not implemented yet!'
-    });
+
+    // Get all users from DB
+    var db = new Db('MongoDatabase', new Server('localhost', 27017));
+    // Establish connection to db
+    db.open(function(err, db) {
+
+
+      var collection = db.collection("user");
+      // Peform a simple find and return all the documents
+      collection.find().toArray(function(err, docs) {
+        assert.equal(null, err);
+
+        db.close();
+
+        return res.json({
+          response: docs
+        });
+
+      });
+
+    }); 
+
   }
+
 };
 
