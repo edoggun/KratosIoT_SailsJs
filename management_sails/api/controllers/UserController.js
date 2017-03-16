@@ -7,6 +7,7 @@
 
 var mkdirp = require('mkdirp');
 var rimraf = require('rimraf');
+var fse = require('fs-extra');
 
 var Db = require('mongodb').Db,
     MongoClient = require('mongodb').MongoClient,
@@ -24,38 +25,34 @@ module.exports = {
   create: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
-    // Creating user folder and APIs folder under it
-    mkdirp('../Users/' + userName + '/APIs', function (err) {
-        if (err) { return res.serverError(err); } 
-        
-        // Creating APPs folder under user folder
-        mkdirp('../Users/' + userName + '/APPs', function (err) {
-          if (err) { return res.serverError(err); }
+    
 
-          // Inserting user into DB
-          var db = new Db('MongoDatabase', new Server('localhost', 27017));
-          // Fetch a collection to insert document into
-          db.open(function(err, db) {
+    //-------------fs-extra------------
+    var dir1 = '../Users/' + userName + '/APIs';
+    fs.ensureDirSync(dir1);
+    var dir2 = '../Users/' + userName + '/APPs';
+    fs.ensureDirSync(dir2);
 
-            var collection = db.collection("user");
-            // Insert a single document
-            collection.insert({userName: userName, status: 'ACT'});
+    // Inserting user into DB
+    var db = new Db('MongoDatabase', new Server('localhost', 27017));
+    // Fetch a collection to insert document into
+      db.open(function(err, db) {
 
-            // Wait for a second before finishing up, to ensure we have written the item to disk
-            setTimeout(function() {
+      var collection = db.collection("user");
+      // Insert a single document
+      collection.insert({userName: userName, status: 'ACT'});
 
-              // Fetch the document
-              collection.findOne({userName: userName}, function(err, item) {
-                assert.equal(null, err);
-                assert.equal(userName, item.userName);
-                db.close();
-              })
+      // Wait for a second before finishing up, to ensure we have written the item to disk
+      setTimeout(function() {
 
-            }, 100);
+        // Fetch the document
+        collection.findOne({userName: userName}, function(err, item) {
+          assert.equal(null, err);
+          assert.equal(userName, item.userName);
+          db.close();
+        })
 
-          });
-
-        });
+      }, 100);
 
     });
 
@@ -69,6 +66,22 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
+    // Get user from DB
+    var db = new Db('MongoDatabase', new Server('localhost', 27017));
+    // Establish connection to db
+    db.open(function(err, db) {
+
+      // Add a user to the database
+      db.addUser('mehmet').then(function(result) {
+        console.log(result);
+        db.close();
+
+      });
+
+          
+    }); 
+
+
     return res.json({
       todo: 'update() is not implemented yet!'
     });
@@ -130,9 +143,18 @@ module.exports = {
     db.open(function(err, db) {
 
       
-      // Peform a simple find and return all the documents
-      db.createCollection("test", function(err, collection){
-        collection.insert({"test":"value"});
+      // Peform a simple find and return one document
+      var collection = db.collection("user");
+
+      collection.findOne({userName: userName}, function(err, doc) {
+        assert.equal(null, err);
+
+        db.close();
+
+        return res.json({
+          response: doc
+        });
+
       });
 
     }); 
