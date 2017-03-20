@@ -111,43 +111,62 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
     var apiName = "Gateway1";
-    var dbKey = this.getDbKeyForUser({userName: userName});
-    console.log(dbKey);
 
-    var userDB = userName;
-    var user_db = new Db(userDB, new Server(dbServer, 27017));
+    // Get user from DB
+    var management_db = new Db(managementDB, new Server(dbServer, 27017));
+    // Establish connection to db
+    management_db.open(function(err, management_db) {
+      
+      // Peform a simple find and return one document
+      var collection = management_db.collection("Users");
 
-    // Open user db
-    user_db.open(function(err, user_db) {
-      if (err) { return console.log(err); }
+      collection.findOne({userName: userName}, function(err, doc) {
+        if (err) { return console.log(err); }
 
-      // Create a capped collection with a maximum of 1000 documents
-      user_db.createCollection(apiName, {capped:true, size:10000, max:1000, w:1}, function(err, collection) {
-        assert.equal(null, err);
+        management_db.close();
 
-        // Insert a document in the capped collection
-        collection.insert({data: "data"}, function(err, result) {
-          assert.equal(null, err);
+        var dbKey = JSON.stringify(doc.dbKey);
+        console.log(dbKey);
+
+        var userDB = userName;
+        var user_db = new Db(userDB, new Server(dbServer, 27017));
+
+        // Open user db
+        user_db.open(function(err, user_db) {
+          if (err) { return console.log(err); }
 
           // Authenticate
           user_db.authenticate(userName, dbKey, function(err, result) {
+            if (err) { return console.log(err); }
+
             assert.equal(true, result);
 
-            user_db.close();
+            // Create a capped collection with a maximum of 1000 documents
+            user_db.createCollection(apiName, function(err, collection) {
+              if (err) { return console.log(err); }
+
+              // Insert a document in the capped collection
+              collection.insert({data: "data"}, function(err, result) {
+                if (err) { return console.log(err); }
+
+                user_db.close();
+
+                return res.json({
+                  response: 'data was added to ' + apiName + ' collection'
+                });
+
+              });
+
+            });
+            
           });
 
         });
 
       });
-          
-  
-    });
 
-
-
-    return res.json({
-      todo: 'update() is not implemented yet!'
-    });
+    }); 
+    
   },
 
 
@@ -273,10 +292,8 @@ module.exports = {
 
         db.close();
 
-        console.log(doc.dbKey);
-
         return res.json({
-          response: doc.dbKey
+          dbKey: doc.dbKey
         });
 
       });
@@ -285,5 +302,5 @@ module.exports = {
 
   },
 
-};
 
+};
