@@ -6,12 +6,17 @@
  */
 
 var fse = require('fs-extra');
-
+var generator = require('generate-password');
 var Db = require('mongodb').Db,
     MongoClient = require('mongodb').MongoClient,
     Server = require('mongodb').Server,
     assert = require('assert');
 
+var admin = "admin";
+var password = "admin123";
+var dbServer = "localhost";
+var dbServerPort = "27017";
+var managementDB = "ManagementDB"
 
 
 module.exports = {
@@ -23,33 +28,73 @@ module.exports = {
   create: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
+
+    var generatedUserPass = generator.generate({
+            length: 8,
+            numbers: true
+        });
+         
+    // 'uEyMTw32v9' 
+    console.log(generatedUserPass);
     
-    // Creating user folder along with APIs and APPs folders under it
-    var dirAPIs = '../Users/' + userName + '/APIs';
-    fse.ensureDirSync(dirAPIs);
-    var dirAPPs = '../Users/' + userName + '/APPs';
-    fse.ensureDirSync(dirAPPs);
+    // Connect admin db in mongodb
+    var connectionString = "mongodb://" + admin + ":" + password + "@" + dbServer + ":" + dbServerPort + "/admin";
 
-    // Inserting user into DB
-    var db = new Db('MongoDatabase', new Server('localhost', 27017));
-    // Fetch a collection to insert document into
-      db.open(function(err, db) {
+    // Connect using the connection string
+    MongoClient.connect(connectionString, {native_parser:true}, function(err, db) {
 
-      var collection = db.collection("user");
-      // Insert a single document
-      collection.insert({userName: userName, status: 'ACT'});
+      // Add user deinition to user collection in management db
+      var management_db = new Db(managementDB, new Server(dbServer, 27017));
 
-      // Wait for a second before finishing up, to ensure we have written the item to disk
-      setTimeout(function() {
+      // Open management db
+      management_db.open(function(err, management_db) {
 
-        // Fetch the document
-        collection.findOne({userName: userName}, function(err, item) {
-          assert.equal(null, err);
-          assert.equal(userName, item.userName);
-          db.close();
-        })
+        var collection = management_db.collection("Users");
+        // Insert a single document
+        collection.insert({userName: userName, status: 'ACT', dbKey: generatedUserPass});
 
-      }, 100);
+        // Wait for a second before finishing up, to ensure we have written the item to disk
+        setTimeout(function() {
+
+          // Fetch the document
+          collection.findOne({userName: userName}, function(err, item) {
+            assert.equal(null, err);
+            assert.equal(userName, item.userName);
+
+            management_db.close();
+          })
+
+        }, 100);
+
+      });
+
+      // Create user db to handle user defined api data collections
+      var userDB = userName;
+      var user_db = new Db(userDB, new Server(dbServer, 27017));
+
+      // Open user db
+      user_db.open(function(err, user_db) {
+        if (err) { return console.log(err); }
+
+        // Add user to the database
+        user_db.addUser(userName, generatedUserPass, {
+              roles: [
+                "readWrite"
+              ]   
+        }, function(err, result) {
+            if (err) { return console.log(err); }
+              
+            // Creating user folder along with APIs and APPs folders under it
+            var dirAPIs = '../Users/' + userName + '/APIs';
+            fse.ensureDirSync(dirAPIs);
+            var dirAPPs = '../Users/' + userName + '/APPs';
+            fse.ensureDirSync(dirAPPs);
+
+            user_db.close();
+
+        });
+
+      });
 
     });
 
@@ -63,7 +108,42 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
-    
+    var params = req.params.all();
+    var userName = params.userName;
+    var apiName = "Gateway1";
+    var dbKey = this.getDbKeyForUser({userName: userName});
+    console.log(dbKey);
+
+    var userDB = userName;
+    var user_db = new Db(userDB, new Server(dbServer, 27017));
+
+    // Open user db
+    user_db.open(function(err, user_db) {
+      if (err) { return console.log(err); }
+
+      // Create a capped collection with a maximum of 1000 documents
+      user_db.createCollection(apiName, {capped:true, size:10000, max:1000, w:1}, function(err, collection) {
+        assert.equal(null, err);
+
+        // Insert a document in the capped collection
+        collection.insert({data: "data"}, function(err, result) {
+          assert.equal(null, err);
+
+          // Authenticate
+          user_db.authenticate(userName, dbKey, function(err, result) {
+            assert.equal(true, result);
+
+            user_db.close();
+          });
+
+        });
+
+      });
+          
+  
+    });
+
+
 
     return res.json({
       todo: 'update() is not implemented yet!'
@@ -82,12 +162,12 @@ module.exports = {
     fse.removeSync(dir);
 
     //Soft delete from DB by updating the entry column ACT->DEACT
-    var db = new Db('MongoDatabase', new Server('localhost', 27017));
+    var db = new Db(managementDB, new Server(dbServer, 27017));
 
     // Fetch a collection to insert document into
     db.open(function(err, db) {
 
-      var collection = db.collection("user");
+      var collection = db.collection("Users");
       // Update the document with an atomic operator
       collection.update({userName: userName}, {$set:{status: 'DEACT'}});
 
@@ -99,6 +179,7 @@ module.exports = {
           assert.equal(null, err);
           assert.equal(userName, item.userName);
           assert.equal('DEACT', item.status);
+
           db.close();
         })
 
@@ -120,13 +201,13 @@ module.exports = {
     var userName = params.userName;
 
     // Get user from DB
-    var db = new Db('MongoDatabase', new Server('localhost', 27017));
+    var db = new Db(managementDB, new Server(dbServer, 27017));
     // Establish connection to db
     db.open(function(err, db) {
 
       
       // Peform a simple find and return one document
-      var collection = db.collection("user");
+      var collection = db.collection("Users");
 
       collection.findOne({userName: userName}, function(err, doc) {
         assert.equal(null, err);
@@ -150,12 +231,12 @@ module.exports = {
   getAll: function (req, res) {
 
     // Get all users from DB
-    var db = new Db('MongoDatabase', new Server('localhost', 27017));
+    var db = new Db(managementDB, new Server(dbServer, 27017));
     // Establish connection to db
     db.open(function(err, db) {
 
 
-      var collection = db.collection("user");
+      var collection = db.collection("Users");
       // Peform a simple find and return all the documents
       collection.find().toArray(function(err, docs) {
         assert.equal(null, err);
@@ -170,7 +251,39 @@ module.exports = {
 
     }); 
 
-  }
+  },
+
+  /**
+   * `UserController.get()`
+   */
+  getDbKeyForUser: function (req, res) {
+    var params = req.params.all();
+    var userName = params.userName;
+
+    // Get user from DB
+    var db = new Db(managementDB, new Server(dbServer, 27017));
+    // Establish connection to db
+    db.open(function(err, db) {
+      
+      // Peform a simple find and return one document
+      var collection = db.collection("Users");
+
+      collection.findOne({userName: userName}, function(err, doc) {
+        assert.equal(null, err);
+
+        db.close();
+
+        console.log(doc.dbKey);
+
+        return res.json({
+          response: doc.dbKey
+        });
+
+      });
+
+    }); 
+
+  },
 
 };
 

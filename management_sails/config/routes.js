@@ -36,10 +36,11 @@ module.exports.routes = {
     view: 'homepage'
   },
 
-  'post /User/create': 'UserController.create',
-  'delete /User/delete': 'UserController.delete',
-  'post /User/get': 'UserController.get',
-  'get /User/getAll:': 'UserController.getAll'
+  'post /User/create' : 'UserController.create',
+  'delete /User/delete' : 'UserController.delete',
+  'post /User/get' : 'UserController.get',
+  'get /User/getAll:' : 'UserController.getAll',
+  'post /User/getDbKeyForUser' : 'UserController.getDbKeyForUser'
 
   /***************************************************************************
   *                                                                          *
