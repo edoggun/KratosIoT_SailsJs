@@ -19,6 +19,9 @@ module.exports = {
 
     data : { type: 'json' }
 
-  }
+  },
+
+  tableName : 'SensorCollection'
+
 };
 

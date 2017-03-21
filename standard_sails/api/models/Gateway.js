@@ -15,6 +15,9 @@ module.exports = {
 
     data : { type: 'json' }
 
-  }
+  },
+
+  tableName : 'GatewayCollection'
+
 };
 
