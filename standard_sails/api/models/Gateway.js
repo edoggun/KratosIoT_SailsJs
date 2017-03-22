@@ -17,7 +17,7 @@ module.exports = {
 
   },
 
-  tableName : 'GatewayCollection'
+  tableName : 'COLLECTION_NAME'
 
 };
 

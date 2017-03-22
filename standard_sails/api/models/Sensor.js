@@ -21,7 +21,7 @@ module.exports = {
 
   },
 
-  tableName : 'SensorCollection'
+  tableName : 'COLLECTION_NAME'
 
 };
 

@@ -5,6 +5,9 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
+var userName = USER_NAME;
+var apiName = API_NAME;
+
 module.exports = {
 	
 

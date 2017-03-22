@@ -17,7 +17,7 @@ module.exports = {
 
   },
 
-  tableName : 'ThingCollection'
+  tableName : 'COLLECTION_NAME'
 
 };
 

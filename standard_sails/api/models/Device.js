@@ -19,7 +19,7 @@ module.exports = {
 
   }, 
 
-  tableName : 'DeviceCollection'
+  tableName : 'COLLECTION_NAME'
 
 };
 

@@ -16,12 +16,11 @@ var admin = "admin";
 var password = "admin123";
 var dbServer = "localhost";
 var dbServerPort = "27017";
-var managementDB = "ManagementDB"
+var adminDB = "admin"
 
 
 module.exports = {
-	
-  
+	  
   /**
    * `UserController.create()`
    */
@@ -36,20 +35,21 @@ module.exports = {
          
     // 'uEyMTw32v9' 
     console.log(generatedUserPass);
-    
-    // Connect admin db in mongodb
-    var connectionString = "mongodb://" + admin + ":" + password + "@" + dbServer + ":" + dbServerPort + "/admin";
 
-    // Connect using the connection string
-    MongoClient.connect(connectionString, {native_parser:true}, function(err, db) {
+    // Add user deinition to user collection in management db
+    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
-      // Add user deinition to user collection in management db
-      var management_db = new Db(managementDB, new Server(dbServer, 27017));
+    // Open management db
+    admin_db.open(function(err, admin_db) {
+      if (err) { return console.error(err); }
 
-      // Open management db
-      management_db.open(function(err, management_db) {
+      var adminDb = admin_db.admin();
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
 
-        var collection = management_db.collection("Users");
+        var collection = admin_db.collection("Users");
+
         // Insert a single document
         collection.insert({userName: userName, status: 'ACT', dbKey: generatedUserPass});
 
@@ -61,20 +61,27 @@ module.exports = {
             assert.equal(null, err);
             assert.equal(userName, item.userName);
 
-            management_db.close();
+            admin_db.close();
           })
 
         }, 100);
 
       });
 
-      // Create user db to handle user defined api data collections
-      var userDB = userName;
-      var user_db = new Db(userDB, new Server(dbServer, 27017));
+    });
 
-      // Open user db
-      user_db.open(function(err, user_db) {
-        if (err) { return console.log(err); }
+    // Create user db to handle user defined api data collections
+    var userDB = userName;
+    var user_db = new Db(userDB, new Server(dbServer, 27017));
+
+    // Open user db
+    user_db.open(function(err, user_db) {
+      if (err) { return console.error(err); }
+
+      var adminDb = user_db.admin();
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
 
         // Add user to the database
         user_db.addUser(userName, generatedUserPass, {
@@ -82,7 +89,7 @@ module.exports = {
                 "readWrite"
               ]   
         }, function(err, result) {
-            if (err) { return console.log(err); }
+            if (err) { return console.error(err); }
               
             // Creating user folder along with APIs and APPs folders under it
             var dirAPIs = '../Users/' + userName + '/APIs';
@@ -99,7 +106,7 @@ module.exports = {
     });
 
     return res.json({
-      response: 'User ' + userName + ' successfully created'
+      response: 'User: ' + userName + ' with dbKey: ' + generatedUserPass + ' was successfully created'
     });
   },
 
@@ -108,52 +115,11 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
-    var params = req.params.all();
-    var userName = 'dogukan';
-    var apiName = 'Gateway1';
-    var dbKey = 'IAXG3YQg';
-
-          var management_db = new Db(managementDB, new Server(dbServer, 27017));
-
-          // Open user db
-          management_db.open(function (err, management_db) {
-            if (err) {
-              return console.log(err);
-            }
-            console.log(admin);
-            console.log(password);
-
-            management_db.authenticate(admin, password, function (err, result) {
-              if (err) {
-                return console.log(err);
-              }
-              // Create a capped collection with a maximum of 1000 documents
-              management_db.createCollection('ABC', function (err, collection) {
-                if (err) {
-                  return console.log(err);
-                }
-
-                // Insert a document in the capped collection
-                collection.insert({
-                  data : "data"
-                }, function (err, result) {
-                  if (err) {
-                    return console.log(err);
-                  }
-                  management_db.close();
-                  console.log("here2");
-
-                });
-
-              });
-            });
-
-            console.log("here3");
-
-          });
+    
+    // Being used for testing purposes
     
     return res.json({
-      response: 'data was added to ' + apiName + ' collection'
+      response: 'done'
     });
     
   },
@@ -166,32 +132,40 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
 
-    var dir = "../Users/" + userName;
-    fs.removeSync(dir);
-
     //Soft delete from DB by updating the entry column ACT->DEACT
-    var db = new Db(managementDB, new Server(dbServer, 27017));
+    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
     // Fetch a collection to insert document into
-    db.open(function(err, db) {
+    admin_db.open(function(err, admin_db) {
+      if (err) { return console.error(err); }
 
-      var collection = db.collection("Users");
-      // Update the document with an atomic operator
-      collection.update({userName: userName}, {$set:{status: 'DEACT'}});
+      var adminDb = admin_db.admin();
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
 
-      // Wait for a second before finishing up, to ensure we have written the item to disk
-      setTimeout(function() {
+        var collection = admin_db.collection("Users");
+        // Update the document with an atomic operator
+        collection.update({userName: userName}, {$set:{status: 'DEACT'}});
 
-      // Fetch the document
-        collection.findOne({userName: userName}, function(err, item) {
-          assert.equal(null, err);
-          assert.equal(userName, item.userName);
-          assert.equal('DEACT', item.status);
+        // Wait for a second before finishing up, to ensure we have written the item to disk
+        setTimeout(function() {
+        // Fetch the document
+          collection.findOne({userName: userName}, function(err, item) {
+            assert.equal(null, err);
+            assert.equal(userName, item.userName);
+            assert.equal('DEACT', item.status);
 
-          db.close();
-        })
+            // Remove user from file system
+            var dir = "../Users/" + userName;
+            fs.removeSync(dir);
 
-      }, 100);
+            admin_db.close();
+          })
+
+        }, 100);
+
+      });
 
     });
 
@@ -208,27 +182,35 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
 
-    // Get user from DB
-    var db = new Db(managementDB, new Server(dbServer, 27017));
-    // Establish connection to db
-    db.open(function(err, db) {
+    //Soft delete from DB by updating the entry column ACT->DEACT
+    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
-      
-      // Peform a simple find and return one document
-      var collection = db.collection("Users");
+    // Fetch a collection to insert document into
+    admin_db.open(function(err, admin_db) {
+      if (err) { return console.error(err); }
 
-      collection.findOne({userName: userName}, function(err, doc) {
-        assert.equal(null, err);
+      var adminDb = admin_db.admin();
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
 
-        db.close();
+        // Peform a simple find and return one document
+        var collection = admin_db.collection("Users");
 
-        return res.json({
-          response: doc
+        collection.findOne({userName: userName}, function(err, doc) {
+          assert.equal(null, err);
+
+          admin_db.close();
+
+          return res.json({
+            response: doc
+          });
+
         });
 
       });
 
-    }); 
+    });
 
   },
 
@@ -238,26 +220,36 @@ module.exports = {
    */
   getAll: function (req, res) {
 
-    // Get all users from DB
-    var db = new Db(managementDB, new Server(dbServer, 27017));
-    // Establish connection to db
-    db.open(function(err, db) {
+    //Soft delete from DB by updating the entry column ACT->DEACT
+    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
+    // Fetch a collection to insert document into
+    admin_db.open(function(err, admin_db) {
+      if (err) { return console.error(err); }
 
-      var collection = db.collection("Users");
-      // Peform a simple find and return all the documents
-      collection.find().toArray(function(err, docs) {
-        assert.equal(null, err);
+      var adminDb = admin_db.admin();
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
 
-        db.close();
+        // Peform a simple find and return one document
+        var collection = admin_db.collection("Users");
 
-        return res.json({
-          response: docs
+        // Peform a simple find and return all the documents
+        collection.find().toArray(function(err, docs) {
+          assert.equal(null, err);
+
+          admin_db.close();
+
+          return res.json({
+            response: docs
+          });
+
         });
 
       });
 
-    }); 
+    });
 
   },
 
@@ -268,26 +260,35 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
 
-    // Get user from DB
-    var db = new Db(managementDB, new Server(dbServer, 27017));
-    // Establish connection to db
-    db.open(function(err, db) {
-      
-      // Peform a simple find and return one document
-      var collection = db.collection("Users");
+    //Soft delete from DB by updating the entry column ACT->DEACT
+    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
-      collection.findOne({userName: userName}, function(err, doc) {
-        assert.equal(null, err);
+    // Fetch a collection to insert document into
+    admin_db.open(function(err, admin_db) {
+      if (err) { return console.error(err); }
 
-        db.close();
+      var adminDb = admin_db.admin();
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
 
-        return res.json({
-          dbKey: doc.dbKey
+        // Peform a simple find and return one document
+        var collection = admin_db.collection("Users");
+
+        collection.findOne({userName: userName}, function(err, doc) {
+          assert.equal(null, err);
+
+          admin_db.close();
+
+          return res.json({
+            dbKey: doc.dbKey
+          });
+
         });
 
       });
 
-    }); 
+    });
 
   },
 
