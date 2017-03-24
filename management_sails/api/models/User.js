@@ -11,6 +11,8 @@ module.exports = {
 
   	userName : { type: 'string' },
 
+    port : { type: 'integer' },
+
   	status : { type: 'string' }
   	
   }

@@ -11,6 +11,12 @@ module.exports = {
 
     apiType : { type: 'string' },
 
+    apiName : { type: 'string' }, 
+
+    userName : { type: 'string' },
+
+    isGenericApi : { type: 'boolean'},
+
     gatewayName : { type: 'string' },
 
     deviceName : { type: 'string' },
@@ -21,14 +27,11 @@ module.exports = {
 
     appName : { type: 'string' },
 
-    userName : { type: 'string' },
+    appApiName : { type: 'string' },
 
-    isGenericApi : { type: 'boolean'},
-
-    timestamp : { type: 'string' },
-
-    port : { type: 'integer' }
+    timestamp : { type: 'string' }
     
   }
+  
 };
 

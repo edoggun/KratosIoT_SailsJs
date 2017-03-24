@@ -25,16 +25,16 @@ module.exports = {
    * `UserController.create()`
    */
   create: function (req, res) {
-    var params = req.params.all();
-    var userName = params.userName;
+    var userName = req.headers.userName;
+    var port = req.params.port;
 
-    var generatedUserPass = generator.generate({
-            length: 8,
+    var dbKey = generator.generate({
+            length: 16,
             numbers: true
         });
          
     // 'uEyMTw32v9' 
-    console.log(generatedUserPass);
+    console.log(dbKey);
 
     // Add user deinition to user collection in management db
     var admin_db = new Db(adminDB, new Server(dbServer, 27017));
@@ -51,7 +51,9 @@ module.exports = {
         var collection = admin_db.collection("Users");
 
         // Insert a single document
-        collection.insert({userName: userName, status: 'ACT', dbKey: generatedUserPass});
+        collection.insert({userName: userName, status: 'ACT', dbKey: dbKey, port: port}, function (err) {
+          if (err) { return console.error(err); }
+        });
 
         // Wait for a second before finishing up, to ensure we have written the item to disk
         setTimeout(function() {
@@ -84,7 +86,7 @@ module.exports = {
         if (err) { return console.error(err); }
 
         // Add user to the database
-        user_db.addUser(userName, generatedUserPass, {
+        user_db.addUser(userName, dbKey, {
               roles: [
                 "readWrite"
               ]   
@@ -105,6 +107,47 @@ module.exports = {
 
     });
 
+    var stdApiFolderLoc = '../standard_sails';
+    var apiFolderLoc = '../Users/' + userName + '/APIs/std_api';
+    var apiLocalConfigFileLoc = apiFolderLoc + '/config/local.js';
+    var apiConnectionConfigFileLoc = apiFolderLoc + '/config/connections.js';
+    var apiControllerLoc = apiFolderLoc + '/api/controllers/ApiController.js'
+
+    // If Api type is generic, then copy standard (ready) api that is located in main directory to user's APIs directory
+    fse.copy(stdApiFolderLoc, apiFolderLoc, function(err) {        
+      if (err) { return console.error(err); }
+
+      // Change port number with the one we get from req in local file
+      fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
+        if (err) { return console.error(err); }
+                   
+        var port = params.port;
+
+        var result = data.replace(/portNo/g, port);
+
+        fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
+          if (err) { return console.error(err); }
+
+          // Change user name global param with the one we get from req
+          fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
+            if (err) { return console.error(err); }
+                                    
+            var result = data.replace(/USER_NAME/g, userName);
+
+            fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
+              if (err) { return console.error(err); }
+
+            });
+
+          });
+
+        });
+
+      });
+                          
+    });
+
+
     return res.json({
       response: 'User: ' + userName + ' with dbKey: ' + generatedUserPass + ' was successfully created'
     });
@@ -117,9 +160,38 @@ module.exports = {
   update: function (req, res) {
     
     // Being used for testing purposes
+
+    /*
+    Collections.create({userName: 'dogukan', collectionName: 'coll_2'}).exec(function (err, result){
+      if (err) { return res.serverError(err); }
+
+      sails.log('Collection name is: ' + result.collectionName);
+      return res.ok();
+
+    });*/
+
+    /*
+    Collections.destroy({collectionName: 'coll_123'}).exec(function (err){
+      if (err) {
+        return res.negotiate(err);
+      }
+      sails.log('Any users named Finn have now been deleted, if there were any.');
+      return res.ok();
+    });*/
+
     
-    return res.json({
-      response: 'done'
+    Collections.find({
+      where: { userName: 'dogukan' },
+      sort: 'createdAt DESC'
+    }).exec(function(err, collections) {
+      UserCollection.destroy().exec(function (err){});
+
+      for (var i=0; i<collections.length; i++) {
+        UserCollection.create({collectionName: collections[i].collectionName}).exec(function (err, result) {
+
+        })
+      }
+      return res.ok();
     });
     
   },
