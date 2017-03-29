@@ -25,6 +25,7 @@ module.exports = {
   /**
    * `UserController.create()`
    */
+
   create: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
@@ -164,22 +165,52 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
+    var userName = 'dogukan';
+    var apiName = 'Device24';
+    var isGenericApi = true;
+    var port;
+
 
     // Being used for testing purposes
-    var exec = require('child_process').exec;
-    exec('netstat -ano | find "LISTENING" | find "8080"', function(error, stdout, stderr) {
-      var stringData = stdout.toString().split("LISTENING");
-      var stringData2 = stringData[2].toString().split("       ");
-      var pid = stringData[1].toString().split("\n");
-      console.log('A' + pid[0] + 'A');
 
-      exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
-      
+    if (isGenericApi) {
+
+      Collections.findOne({
+        where: { userName: userName, isGenericApi: true }
+      }).exec(function(err, collection) {
+        if (collection) {
+          port = collection.port;
+        } else {
+          port = '40000';
+        }
+
+        Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: true}).exec(function (err, result){
+          if (err) { return res.serverError(err); }
+        });
 
       });
 
-    });
+    } else {
 
+      Collections.find({
+        where: { userName: userName, isGenericApi: false },
+        sort: 'port DESC'
+      }).exec(function(err, collections) {
+        if (collections) {
+          var latestPort = parseInt(collections[0].port);
+          var newPort = latestPort + 1;
+          port = newPort.toString();
+        } else {
+          port = '45000';
+        }
+
+        Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: true}).exec(function (err, result){
+          if (err) { return res.serverError(err); }
+        });   
+
+      });
+
+    }
     
     return res.json({
       response: 'DONE'

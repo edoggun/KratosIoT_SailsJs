@@ -29,13 +29,25 @@ module.exports = {
   createApi: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
-    var isCustomApi = params.isCustomApi;
     var apiName = params.apiName;
     var apiType = params.apiType;
+    var isGenericApi = params.isGenericApi;
     var definitionTableName = "Definitions";
+    var port;
 
-    Collections.create({userName: userName, collectionName: apiName}).exec(function (err, result){
-      if (err) { return res.serverError(err); }
+    Collections.findOne({
+      where: { userName: userName, isGenericApi: isGenericApi }
+    }).exec(function(err, collection) {
+      if (collection) {
+        port = collection.port;
+      } else {
+        port = '40000';
+      }
+
+      Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: isGenericApi}).exec(function (err, result){
+        if (err) { return res.serverError(err); }
+      });
+
     });
   
     // Add user deinition to user collection in management db
@@ -60,7 +72,7 @@ module.exports = {
         var appName = params.appName ? params.appName : "";
 
         api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                               appApiName: appApiName, appName: appName, userName: userName, isCustomApi: isCustomApi, timeStamp: params.timeStamp, status: 'ACT'}, 
+                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: isGenericApi, timeStamp: params.timeStamp, status: 'ACT'}, 
                                function (err, result) {
             
           if (err) { return console.error(err); } 
@@ -92,10 +104,10 @@ module.exports = {
             });
 
             var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
-            var localDiskDbLoc = '.tmp/userDiskDb.db';
+            var localUserDiskDbLoc = '.tmp/userDiskDb.db';
             var userDiskDbLoc = apiFolderLoc + '/.tmp/userDiskDb.db';
 
-            fse.copy(localDiskDbLoc, userDiskDbLoc, function(err) {        
+            fse.copy(localUserDiskDbLoc, userDiskDbLoc, function(err) {        
               if (err) { return console.error(err); }
             });
 
@@ -123,14 +135,32 @@ module.exports = {
     var userName = params.userName;
     var apiName = params.apiName;
     var isCustomApi = params.isCustomApi;
-    var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
-    var destLoc = '../Users/' + userName + '/APIs/';
     var definitionTableName = "Definitions";
+    var port;
 
     // First delete if there is any same named apis in the user's APIs dir
     fse.removeSync(destLoc + apiName);
 
     if (isCustomApi) {
+
+      Collections.find({
+        where: { userName: userName, isGenericApi: false },
+        sort: 'port DESC'
+      }).exec(function(err, collections) {
+        if (collections) {
+          var latestPort = parseInt(collections[0].port);
+          var newPort = latestPort + 1;
+          port = newPort.toString();
+        } else {
+          port = '45000';
+        }
+
+        Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: false}).exec(function (err, result){
+          if (err) { return res.serverError(err); }
+        });   
+
+      });
+
       // Add user deinition to user collection in management db
       var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
@@ -153,7 +183,7 @@ module.exports = {
           var appName = params.appName ? params.appName : "";
 
           api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                                 appApiName: appApiName, appName: appName, userName: userName, isCustomApi: isCustomApi, timeStamp: params.timeStamp, status: 'ACT'}, 
+                                 appApiName: appApiName, appName: appName, userName: userName, isGenericApi: false, timeStamp: params.timeStamp, status: 'ACT'}, 
                                  function (err, result) {
               
             if (err) { return console.error(err); } 
@@ -167,15 +197,21 @@ module.exports = {
       });
 
     }
+   
+    var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
+    var destLoc = '../Users/' + userName + '/APIs/';
+
+    fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
 
     var respType = isCustomApi ? 'created' : 'uploaded';
 
+    var apiURL = (respType == 'created') ? ('http://localhost:' + port + '/CustomAPI') : "";
+    
     // Wait for a second before finishing up, to ensure we have written the item to disk
     setTimeout(function() {
-
-      fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
       return res.json({
-        response: apiName + 'is successfully' + respType
+        response: apiName + 'is successfully' + respType,
+        apiURL: apiURL
       });
 
     }, 2000);   
