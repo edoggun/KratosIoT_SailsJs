@@ -5,6 +5,7 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
+var exec = require('child_process').exec;
 var unzip = require('unzip');
 var fs = require('fs');
 var fse = require('fs-extra');
@@ -28,7 +29,7 @@ module.exports = {
   createApi: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
-    var isGenericApi = params.isGenericApi;
+    var isCustomApi = params.isCustomApi;
     var apiName = params.apiName;
     var apiType = params.apiType;
     var definitionTableName = "Definitions";
@@ -59,7 +60,7 @@ module.exports = {
         var appName = params.appName ? params.appName : "";
 
         api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: isGenericApi, timeStamp: params.timeStamp, status: 'Created'}, 
+                               appApiName: appApiName, appName: appName, userName: userName, isCustomApi: isCustomApi, timeStamp: params.timeStamp, status: 'ACT'}, 
                                function (err, result) {
             
           if (err) { return console.error(err); } 
@@ -121,18 +122,60 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
     var apiName = params.apiName;
+    var isCustomApi = params.isCustomApi;
     var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
     var destLoc = '../Users/' + userName + '/APIs/';
+    var definitionTableName = "Definitions";
 
     // First delete if there is any same named apis in the user's APIs dir
     fse.removeSync(destLoc + apiName);
+
+    if (isCustomApi) {
+      // Add user deinition to user collection in management db
+      var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+
+      // Open management db
+      admin_db.open(function(err, admin_db) {
+        if (err) { return console.error(err); }
+
+        var adminDb = admin_db.admin();
+        // Authenticate using admin control over db
+        adminDb.authenticate(admin, password, function (err, result) {
+          if (err) { return console.error(err); }
+
+          var api_collection = admin_db.collection(definitionTableName);
+
+          var gatewayName = params.gatewayName ? params.gatewayName : "";
+          var deviceName = params.deviceName ? params.deviceName : "";
+          var sensorName = params.sensorName ? params.sensorName : "";
+          var thingName = params.thingName ? params.thingName : "";
+          var appApiName = params.appApiName ? params.appApiName : "";
+          var appName = params.appName ? params.appName : "";
+
+          api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
+                                 appApiName: appApiName, appName: appName, userName: userName, isCustomApi: isCustomApi, timeStamp: params.timeStamp, status: 'ACT'}, 
+                                 function (err, result) {
+              
+            if (err) { return console.error(err); } 
+
+            admin_db.close();
+
+          });
+
+        });
+
+      });
+
+    }
+
+    var respType = isCustomApi ? 'created' : 'uploaded';
 
     // Wait for a second before finishing up, to ensure we have written the item to disk
     setTimeout(function() {
 
       fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
       return res.json({
-        response: apiName + 'is successfully uploaded'
+        response: apiName + 'is successfully' + respType
       });
 
     }, 2000);   
@@ -149,12 +192,47 @@ module.exports = {
     var apiName = params.apiName;
     var fileLoc = '../Users/' + userName + '/APIs/' + apiName;
 
-    // First delete if there is any same named apis in the user's APIs dir
-    fse.removeSync(fileLoc);
+    //Soft delete from DB by updating the entry column ACT->DEACT
+    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
-    return res.json({
-      response: apiName + 'is successfully deleted'
+    // Fetch a collection to insert document into
+    admin_db.open(function(err, admin_db) {
+      if (err) { return console.error(err); }
+
+      var adminDb = admin_db.admin();
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
+
+        var collection = admin_db.collection("Definitions");
+        // Update the document with an atomic operator
+        collection.update({apiName: apiName}, {$set:{status: 'DEACT'}});
+
+        // Wait for a second before finishing up, to ensure we have written the item to disk
+        setTimeout(function() {
+        // Fetch the document
+          collection.findOne({apiName: apiName}, function(err, item) {
+            assert.equal(null, err);
+            assert.equal(apiName, item.apiName);
+            assert.equal('DEACT', item.status);
+
+            admin_db.close();
+
+            // First delete if there is any same named apis in the user's APIs dir
+            fse.removeSync(fileLoc);
+
+            return res.json({
+              response: apiName + 'is successfully deleted'
+            });
+
+          })
+
+        }, 100);
+
+      });
+
     });
+
 
   },
 
@@ -167,16 +245,13 @@ module.exports = {
     var port = params.port; // TODO: will be changed after port management takes place
 
     exec('netstat -ano | find "LISTENING" | find "' + port + '"', function(error, stdout, stderr) {
-      if (stdout) {
-        var exec = require('child_process').exec;
-        exec('sails lift', {
-          cwd: '../Users/dogukan/APIs/Device24'
-        }, function(error, stdout, stderr) {
+      if (stdout == "") {
+        exec('sails lift', { cwd: '../Users/dogukan/APIs/Device24' }, function(error, stdout, stderr) {
           
-          return res.json({
-            todo: 'API has started'
-          });
-
+        });
+        
+        return res.json({
+          todo: 'API has started'
         });
         
       }
@@ -195,18 +270,20 @@ module.exports = {
 
     var exec = require('child_process').exec;
     exec('netstat -ano | find "LISTENING" | find "' + port + '"', function(error, stdout, stderr) {
-      var stringData = stdout.toString().split("LISTENING");
-      var stringData2 = stringData[2].toString().split("       ");
-      var pid = stringData[1].toString().split("\n");
-      console.log('A' + pid[0] + 'A');
+      if (stdout != "") {
+        var stringData = stdout.toString().split("LISTENING");
+        var stringData2 = stringData[2].toString().split("       ");
+        var pid = stringData[1].toString().split("\n");
 
-      exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
-        
+        exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
+
+        });
+
         return res.json({
           todo: 'API has stopped'
         });
 
-      });
+      }
 
     });
 

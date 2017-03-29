@@ -127,7 +127,7 @@ module.exports = {
                        
           var port = params.port;
 
-          var result = data.replace(/portNo/g, port);
+          var result = data.replace(/$PORT_NO/g, port);
 
           fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
             if (err) { return console.error(err); }
@@ -136,7 +136,7 @@ module.exports = {
             fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
               if (err) { return console.error(err); }
                                         
-              var result = data.replace(/USER_NAME/g, userName);
+              var result = data.replace(/$USER_NAME/g, userName);
 
               fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
                 if (err) { return console.error(err); }
