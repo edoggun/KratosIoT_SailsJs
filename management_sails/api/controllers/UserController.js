@@ -5,6 +5,7 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
+
 var fs = require('fs-extra');
 var generator = require('generate-password');
 var Db = require('mongodb').Db,
@@ -25,8 +26,9 @@ module.exports = {
    * `UserController.create()`
    */
   create: function (req, res) {
-    var userName = req.headers.userName;
-    var port = req.params.port;
+    var params = req.params.all();
+    var userName = params.userName;
+    var port = params.port;
 
     var dbKey = generator.generate({
             length: 16,
@@ -93,12 +95,6 @@ module.exports = {
         }, function(err, result) {
             if (err) { return console.error(err); }
               
-            // Creating user folder along with APIs and APPs folders under it
-            var dirAPIs = '../Users/' + userName + '/APIs';
-            fs.ensureDirSync(dirAPIs);
-            var dirAPPs = '../Users/' + userName + '/APPs';
-            fs.ensureDirSync(dirAPPs);
-
             user_db.close();
 
         });
@@ -107,35 +103,49 @@ module.exports = {
 
     });
 
+    // Creating user folder along with APIs and APPs folders under it
+    var dirAPIs = '../Users/' + userName + '/APIs';
+    fs.ensureDirSync(dirAPIs);
+    var dirAPPs = '../Users/' + userName + '/APPs';
+    fs.ensureDirSync(dirAPPs);
+
     var stdApiFolderLoc = '../standard_sails';
-    var apiFolderLoc = '../Users/' + userName + '/APIs/std_api';
+    var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
     var apiLocalConfigFileLoc = apiFolderLoc + '/config/local.js';
     var apiConnectionConfigFileLoc = apiFolderLoc + '/config/connections.js';
     var apiControllerLoc = apiFolderLoc + '/api/controllers/ApiController.js'
 
     // If Api type is generic, then copy standard (ready) api that is located in main directory to user's APIs directory
-    fse.copy(stdApiFolderLoc, apiFolderLoc, function(err) {        
-      if (err) { return console.error(err); }
+    fs.copy(stdApiFolderLoc, apiFolderLoc, function(err) {        
+      if (err) { return console.error(err); }    
 
-      // Change port number with the one we get from req in local file
-      fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
-        if (err) { return console.error(err); }
-                   
-        var port = params.port;
-
-        var result = data.replace(/portNo/g, port);
-
-        fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
+      // Wait for a second before finishing up, to ensure we have written the item to disk
+      setTimeout(function() {
+        // Change port number with the one we get from req in local file
+        fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
           if (err) { return console.error(err); }
+                       
+          var port = params.port;
 
-          // Change user name global param with the one we get from req
-          fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
+          var result = data.replace(/portNo/g, port);
+
+          fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
             if (err) { return console.error(err); }
-                                    
-            var result = data.replace(/USER_NAME/g, userName);
 
-            fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
+            // Change user name global param with the one we get from req
+            fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
               if (err) { return console.error(err); }
+                                        
+              var result = data.replace(/USER_NAME/g, userName);
+
+              fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
+                if (err) { return console.error(err); }
+
+                return res.json({
+                  response: 'User: ' + userName + ' with dbKey: ' + dbKey + ' was successfully created'
+                });
+
+              });
 
             });
 
@@ -143,14 +153,10 @@ module.exports = {
 
         });
 
-      });
-                          
-    });
+      }, 1000);    
 
+    });  
 
-    return res.json({
-      response: 'User: ' + userName + ' with dbKey: ' + generatedUserPass + ' was successfully created'
-    });
   },
 
 
@@ -158,42 +164,27 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
-    
+
     // Being used for testing purposes
+    var exec = require('child_process').exec;
+    exec('netstat -ano | find "LISTENING" | find "8080"', function(error, stdout, stderr) {
+      var stringData = stdout.toString().split("LISTENING");
+      var stringData2 = stringData[2].toString().split("       ");
+      var pid = stringData[1].toString().split("\n");
+      console.log('A' + pid[0] + 'A');
 
-    /*
-    Collections.create({userName: 'dogukan', collectionName: 'coll_2'}).exec(function (err, result){
-      if (err) { return res.serverError(err); }
+      exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
+      
 
-      sails.log('Collection name is: ' + result.collectionName);
-      return res.ok();
+      });
 
-    });*/
-
-    /*
-    Collections.destroy({collectionName: 'coll_123'}).exec(function (err){
-      if (err) {
-        return res.negotiate(err);
-      }
-      sails.log('Any users named Finn have now been deleted, if there were any.');
-      return res.ok();
-    });*/
-
-    
-    Collections.find({
-      where: { userName: 'dogukan' },
-      sort: 'createdAt DESC'
-    }).exec(function(err, collections) {
-      UserCollection.destroy().exec(function (err){});
-
-      for (var i=0; i<collections.length; i++) {
-        UserCollection.create({collectionName: collections[i].collectionName}).exec(function (err, result) {
-
-        })
-      }
-      return res.ok();
     });
+
     
+    return res.json({
+      response: 'DONE'
+    });
+
   },
 
 
@@ -233,6 +224,11 @@ module.exports = {
             fs.removeSync(dir);
 
             admin_db.close();
+
+            return res.json({
+              response: 'User ' + userName + ' successfully removed'
+            });
+
           })
 
         }, 100);
@@ -241,9 +237,6 @@ module.exports = {
 
     });
 
-    return res.json({
-      response: 'User ' + userName + ' successfully removed'
-    });
   },
 
 

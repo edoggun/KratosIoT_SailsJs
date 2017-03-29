@@ -5,7 +5,7 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
-var Unrar = require('node-unrar');
+var unzip = require('unzip');
 var fs = require('fs');
 var fse = require('fs-extra');
 var Db = require('mongodb').Db,
@@ -26,8 +26,8 @@ module.exports = {
    * `APIController.createApi()`
    */
   createApi: function (req, res) {
-    var userName = req.headers.userName;
     var params = req.params.all();
+    var userName = params.userName;
     var isGenericApi = params.isGenericApi;
     var apiName = params.apiName;
     var apiType = params.apiType;
@@ -70,55 +70,38 @@ module.exports = {
             assert.equal(null, err);
 
             var dbKey = JSON.stringify(doc.dbKey);
-            console.log(dbKey);
-
-            var portNo = JSON.stringify(doc.port);
-            console.log(portNo);
+            var port = JSON.stringify(doc.port);
 
             admin_db.close();
 
-            var apiFolderLoc = '../Users/' + userName + '/APIs/std_api';
-            var apiControllerLoc = apiFolderLoc + '/api/controllers/ApiController.js';
-
-            // Change api name global param with the one we get from req
-            fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
-              if (err) { return console.error(err); }
-                                              
-              var result = data.replace(/API_NAME/g, apiName);
-
-              fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
-                if (err) { return console.error(err); }  
-
-                Collections.find({
-                  where: { userName: userName },
-                  sort: 'createdAt DESC'
-                }).exec(function(err, collections) {
-                  UserCollection.destroy().exec(function (err){
-                    if (err) { return console.error(err); }
-                  });
-
-                  for (var i=0; i<collections.length; i++) {
-                    UserCollection.create({collectionName: collections[i].collectionName}).exec(function (err, result) {
-                      if (err) { return console.error(err); }
-                    })
-                  }
-                });
-
-                var localDiskDbLoc = '/.tmp/userDiskDb.db';
-                var userDiskDbLoc = apiFolderLoc + '/.tmp/userDiskDb.db';
-
-                fse.copy(localDiskDbLoc, userDiskDbLoc, function(err) {        
-                  if (err) { return console.error(err); }
-                });
-
-                return res.json({
-                  collection: apiName,
-                  userName: userName,
-                  apiURL:  'API_URL'
-                });
-                                
+            
+            Collections.find({
+                where: { userName: userName },
+                sort: 'createdAt DESC'
+            }).exec(function(err, collections) {
+              UserCollection.destroy().exec(function (err){
+                if (err) { return console.error(err); }
               });
 
+              for (var i=0; i<collections.length; i++) {
+                UserCollection.create({collectionName: collections[i].collectionName}).exec(function (err, result) {
+                  if (err) { return console.error(err); }
+                })
+              }
+            });
+
+            var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
+            var localDiskDbLoc = '.tmp/userDiskDb.db';
+            var userDiskDbLoc = apiFolderLoc + '/.tmp/userDiskDb.db';
+
+            fse.copy(localDiskDbLoc, userDiskDbLoc, function(err) {        
+              if (err) { return console.error(err); }
+            });
+
+            return res.json({
+              collection: apiName,
+              userName: userName,
+              apiURL:  'http://localhost:' + port + '/GenericAPI'
             });
               
           });
@@ -138,33 +121,22 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
     var apiName = params.apiName;
-    var fileName = apiName + '.rar';
-    var fileLoc = '../UploadedAPIs/' + fileName;
+    var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
     var destLoc = '../Users/' + userName + '/APIs/';
 
     // First delete if there is any same named apis in the user's APIs dir
-    //fse.removeSync(destLoc);
+    fse.removeSync(destLoc + apiName);
+
+    // Wait for a second before finishing up, to ensure we have written the item to disk
+    setTimeout(function() {
+
+      fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
+      return res.json({
+        response: apiName + 'is successfully uploaded'
+      });
+
+    }, 2000);   
     
-    // Move uploaded api to user's APIs dir
-    fse.move(fileLoc, destLoc + fileName, function (err) {
-      if (err) { return res.serverError(err); }
-
-      setTimeout(function () {
-        var rar = new Unrar(destLoc + fileName);
-       
-        rar.extract(destLoc, null, function (err) {
-          
-
-        });
-
-      }, 10000)
-
-    });
-
-    return res.json({
-      response: apiName + ' api is uploaded successfully!'
-    });
-
   },
   
 
@@ -191,9 +163,26 @@ module.exports = {
    * `APIController.startApi()`
    */
   startApi: function (req, res) {
-    return res.json({
-      todo: 'start() is not implemented yet!'
+    var params = req.params.all();
+    var port = params.port; // TODO: will be changed after port management takes place
+
+    exec('netstat -ano | find "LISTENING" | find "' + port + '"', function(error, stdout, stderr) {
+      if (stdout) {
+        var exec = require('child_process').exec;
+        exec('sails lift', {
+          cwd: '../Users/dogukan/APIs/Device24'
+        }, function(error, stdout, stderr) {
+          
+          return res.json({
+            todo: 'API has started'
+          });
+
+        });
+        
+      }
+
     });
+
   },
 
 
@@ -201,9 +190,26 @@ module.exports = {
    * `APIController.stopApi()`
    */
   stopApi: function (req, res) {
-    return res.json({
-      todo: 'stop() is not implemented yet!'
+    var params = req.params.all();
+    var port = params.port; // TODO: will be changed after port management takes place
+
+    var exec = require('child_process').exec;
+    exec('netstat -ano | find "LISTENING" | find "' + port + '"', function(error, stdout, stderr) {
+      var stringData = stdout.toString().split("LISTENING");
+      var stringData2 = stringData[2].toString().split("       ");
+      var pid = stringData[1].toString().split("\n");
+      console.log('A' + pid[0] + 'A');
+
+      exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
+        
+        return res.json({
+          todo: 'API has stopped'
+        });
+
+      });
+
     });
+
   },
 
 };
