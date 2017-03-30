@@ -9,15 +9,37 @@ module.exports = {
 
   attributes: {
 
-  	gatewayName : { type: 'string' },
+  	gatewayName : { 
+  		type: 'string',
+  		primaryKey: true 
+  	},
 
-    userName : { type: 'string' },
+    userName : { 
+    	type: 'string',
+    	required: true,
+    	defaultsTo: '' 
+    },
 
-    data : { type: 'json' }
+    data : { 
+    	type: 'json',
+    	required: true,
+    	defaultsTo: '' 
+    },
 
+    readTime : {
+    	type: 'date',
+    	required: true,
+    	defaultsTo: ''
+    },
+     toJSON: function() {
+            var obj = this.toObject();
+            delete obj.id;
+            delete obj.createdAt;
+            delete obj.updatedAt;
+            return obj;
+       }, //TODO Filter records when querying
   },
 
-  tableName : 'COLLECTION_NAME'
-
+  tableName: "custom_gateway_collection2"
 };
 
