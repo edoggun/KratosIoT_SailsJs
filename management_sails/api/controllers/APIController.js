@@ -10,9 +10,7 @@ var unzip = require('unzip');
 var fs = require('fs');
 var fse = require('fs-extra');
 var Db = require('mongodb').Db,
-    MongoClient = require('mongodb').MongoClient,
-    Server = require('mongodb').Server,
-    assert = require('assert');
+    Server = require('mongodb').Server;
 
 var admin = "admin";
 var password = "admin123";
@@ -24,32 +22,14 @@ var adminDB = "admin";
 module.exports = {
 	
   /**
-   * `APIController.createApi()`
+   * `APIController.createStandardApi()`
    */
-  createApi: function (req, res) {
+  createStandardApi: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
     var apiName = params.apiName;
     var apiType = params.apiType;
-    var isGenericApi = params.isGenericApi;
-    var definitionTableName = "Definitions";
-    var port;
 
-    Collections.findOne({
-      where: { userName: userName, isGenericApi: isGenericApi }
-    }).exec(function(err, collection) {
-      if (collection) {
-        port = collection.port;
-      } else {
-        port = '40000';
-      }
-
-      Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: isGenericApi}).exec(function (err, result){
-        if (err) { return res.serverError(err); }
-      });
-
-    });
-  
     // Add user deinition to user collection in management db
     var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
@@ -62,7 +42,7 @@ module.exports = {
       adminDb.authenticate(admin, password, function (err, result) {
         if (err) { return console.error(err); }
 
-        var api_collection = admin_db.collection(definitionTableName);
+        var api_collection = admin_db.collection('Definitions');
 
         var gatewayName = params.gatewayName ? params.gatewayName : "";
         var deviceName = params.deviceName ? params.deviceName : "";
@@ -72,25 +52,28 @@ module.exports = {
         var appName = params.appName ? params.appName : "";
 
         api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: isGenericApi, timeStamp: params.timeStamp, status: 'ACT'}, 
+                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: true, timeStamp: params.timeStamp, status: 'ACT'}, 
                                function (err, result) {
-            
+              
           if (err) { return console.error(err); } 
 
-          var user_collection = admin_db.collection("Users");
+          var user_collection = admin_db.collection('Users');
 
           user_collection.findOne({userName: userName}, function(err, doc) {
-            assert.equal(null, err);
+            if (err) { return console.error(err); } 
 
-            var dbKey = JSON.stringify(doc.dbKey);
-            var port = JSON.stringify(doc.port);
+            var port = doc.port;
 
             admin_db.close();
 
-            
+            Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: true}).exec(function (err, result){
+              if (err) { return res.serverError(err); }
+            });
+
+              
             Collections.find({
-                where: { userName: userName },
-                sort: 'createdAt DESC'
+              where: { userName: userName },
+              sort: 'createdAt DESC'
             }).exec(function(err, collections) {
               UserCollection.destroy().exec(function (err){
                 if (err) { return console.error(err); }
@@ -101,6 +84,7 @@ module.exports = {
                   if (err) { return console.error(err); }
                 })
               }
+
             });
 
             var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
@@ -111,12 +95,27 @@ module.exports = {
               if (err) { return console.error(err); }
             });
 
-            return res.json({
-              collection: apiName,
-              userName: userName,
-              apiURL:  'http://localhost:' + port + '/GenericAPI'
-            });
-              
+            setTimeout(function() {
+              exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+                if (error) { return console.error(error); } 
+
+                if (stdout == "") {
+                  exec('sails lift', { cwd: '../Users/' + userName + '/APIs/' + apiName }, function(error, stdout, stderr) {
+                    
+                  });
+                  
+                  return res.json({
+                    collection: apiName,
+                    userName: userName,
+                    apiURL:  'http://localhost:' + JSON.stringify(doc.port) + '/GenericAPI'
+                  });
+                  
+                }
+
+              });
+
+            }, 300);
+                
           });
 
         });
@@ -128,38 +127,28 @@ module.exports = {
   },
 
   /**
-   * `APIController.uploadApi()`
+   * `APIController.createCustomApi()`
    */
-  uploadApi: function (req, res) {
+  createCustomApi: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
     var apiName = params.apiName;
-    var isCustomApi = params.isCustomApi;
-    var definitionTableName = "Definitions";
-    var port;
 
-    // First delete if there is any same named apis in the user's APIs dir
-    fse.removeSync(destLoc + apiName);
+    Collections.find({
+      where: { userName: userName, isGenericApi: false },
+      sort: 'port DESC'
+    }).exec(function(err, collections) {
+      var port;
+      if (collections) {
+        var latestPort = collections[0].port;
+        port = latestPort + 1;
+      } else {
+        port = 45000;
+      }
 
-    if (isCustomApi) {
-
-      Collections.find({
-        where: { userName: userName, isGenericApi: false },
-        sort: 'port DESC'
-      }).exec(function(err, collections) {
-        if (collections) {
-          var latestPort = parseInt(collections[0].port);
-          var newPort = latestPort + 1;
-          port = newPort.toString();
-        } else {
-          port = '45000';
-        }
-
-        Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: false}).exec(function (err, result){
-          if (err) { return res.serverError(err); }
-        });   
-
-      });
+      Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: false}).exec(function (err, result){
+        if (err) { return console.error(err); }
+      });   
 
       // Add user deinition to user collection in management db
       var admin_db = new Db(adminDB, new Server(dbServer, 27017));
@@ -173,7 +162,7 @@ module.exports = {
         adminDb.authenticate(admin, password, function (err, result) {
           if (err) { return console.error(err); }
 
-          var api_collection = admin_db.collection(definitionTableName);
+          var api_collection = admin_db.collection('Definitions');
 
           var gatewayName = params.gatewayName ? params.gatewayName : "";
           var deviceName = params.deviceName ? params.deviceName : "";
@@ -185,7 +174,7 @@ module.exports = {
           api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
                                  appApiName: appApiName, appName: appName, userName: userName, isGenericApi: false, timeStamp: params.timeStamp, status: 'ACT'}, 
                                  function (err, result) {
-              
+                
             if (err) { return console.error(err); } 
 
             admin_db.close();
@@ -194,27 +183,100 @@ module.exports = {
 
         });
 
-      });
+      });     
+     
+      var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
+      var destLoc = '../Users/' + userName + '/APIs/';
 
-    }
-   
+      fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
+        
+      // Wait for 20 seconds before finishing up
+      setTimeout(function() {
+
+        return res.json({
+          collection: apiName,
+          userName: userName,
+          apiURL: 'http://localhost:' + port.toString() + '/CustomAPI'
+        });
+
+      }, 2000);   
+
+    });
+
+  },
+
+  /**
+   * `APIController.uploadApi()`
+   */
+  updateApi: function (req, res) {
+    var params = req.params.all();
+    var userName = params.userName;
+    var apiName = params.apiName;
     var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
     var destLoc = '../Users/' + userName + '/APIs/';
 
-    fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
+    // Find port
+    Collections.findOne({
+      where: { userName: userName, apiName: apiName, isGenericApi: false }
+    }).exec(function(err, collection) {
+      if (err) { return console.error(err); } 
 
-    var respType = isCustomApi ? 'created' : 'uploaded';
+      var port = collection.port;
+      // Stop API
+      var exec = require('child_process').exec;
+      exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+        if (error) { return console.error(error); } 
 
-    var apiURL = (respType == 'created') ? ('http://localhost:' + port + '/CustomAPI') : "";
-    
-    // Wait for a second before finishing up, to ensure we have written the item to disk
-    setTimeout(function() {
-      return res.json({
-        response: apiName + 'is successfully' + respType,
-        apiURL: apiURL
+        if (stdout != "") {
+          var stringData = stdout.toString().split("LISTENING");
+          var stringData2 = stringData[2].toString().split("       ");
+          var pid = stringData[1].toString().split("\n");
+
+          exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
+            if (error) { return console.error(error); }
+
+            // Wait for 10 seconds before finishing up
+            setTimeout(function() {
+              // Delete if there is any same named apis in the user's APIs dir
+              fse.removeSync(destLoc + apiName);
+
+              // Wait for 10 seconds before finishing up
+              setTimeout(function() {
+                
+                fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
+                  
+                // Wait for 20 seconds before finishing up
+                setTimeout(function() {
+                  // Start api
+                  exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+                    if (error) { return console.error(error); }
+
+                    if (stdout == "") {
+                      exec('sails lift', { cwd: '../Users/' + userName + '/APIs/' + apiName }, function(error, stdout, stderr) {
+                        if (error) { return console.error(error); }
+                      });
+
+                      return res.json({
+                        response: 'API has been updated'
+                      });
+
+                    }
+
+                  });
+
+                }, 2000); 
+              
+              }, 1000);
+
+            }, 500);
+
+          });
+
+        }
+
       });
 
-    }, 2000);   
+    });
     
   },
   
@@ -228,47 +290,68 @@ module.exports = {
     var apiName = params.apiName;
     var fileLoc = '../Users/' + userName + '/APIs/' + apiName;
 
-    //Soft delete from DB by updating the entry column ACT->DEACT
-    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+    Collections.findOne({
+      where: { userName: userName, apiName: apiName }
+    }).exec(function(err, collection) {
+      if (err) { return console.error(err); } 
 
-    // Fetch a collection to insert document into
-    admin_db.open(function(err, admin_db) {
-      if (err) { return console.error(err); }
+      var port = collection.port;
 
-      var adminDb = admin_db.admin();
-      // Authenticate using admin control over db
-      adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return console.error(err); }
+      var exec = require('child_process').exec;
+      exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+        if (stdout != "") {
+          var stringData = stdout.toString().split("LISTENING");
+          var stringData2 = stringData[2].toString().split("       ");
+          var pid = stringData[1].toString().split("\n");
 
-        var collection = admin_db.collection("Definitions");
-        // Update the document with an atomic operator
-        collection.update({apiName: apiName}, {$set:{status: 'DEACT'}});
+          exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
 
-        // Wait for a second before finishing up, to ensure we have written the item to disk
-        setTimeout(function() {
-        // Fetch the document
-          collection.findOne({apiName: apiName}, function(err, item) {
-            assert.equal(null, err);
-            assert.equal(apiName, item.apiName);
-            assert.equal('DEACT', item.status);
+          });
 
-            admin_db.close();
+          // Wait for 5 seconds before going on to stop API properly
+          setTimeout(function(){
+            //Soft delete from DB by updating the entry column ACT->DEACT
+            var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
-            // First delete if there is any same named apis in the user's APIs dir
-            fse.removeSync(fileLoc);
+            // Fetch a collection to insert document into
+            admin_db.open(function(err, admin_db) {
+              if (err) { return console.error(err); }
 
-            return res.json({
-              response: apiName + 'is successfully deleted'
+              var adminDb = admin_db.admin();
+              // Authenticate using admin control over db
+              adminDb.authenticate(admin, password, function (err, result) {
+                if (err) { return console.error(err); }
+
+                var collection = admin_db.collection("Definitions");
+                // Update the document with an atomic operator
+                collection.update({apiName: apiName}, {$set:{status: 'DEACT'}});
+
+
+                admin_db.close();
+
+                // First delete if there is any same named apis in the user's APIs dir
+                fse.removeSync(fileLoc);
+
+                // Wait for 10 seconds before deleting API from file system properly
+                setTimeout(function() {
+
+                  return res.json({
+                    response: apiName + 'is successfully deleted'
+                  });
+
+                }, 1000);
+
+              });
+
             });
 
-          })
+          }, 500);
 
-        }, 100);
+        }
 
       });
 
-    });
-
+    });  
 
   },
 
@@ -278,19 +361,31 @@ module.exports = {
    */
   startApi: function (req, res) {
     var params = req.params.all();
-    var port = params.port; // TODO: will be changed after port management takes place
+    var userName = params.userName;
+    var apiName = params.apiName;
 
-    exec('netstat -ano | find "LISTENING" | find "' + port + '"', function(error, stdout, stderr) {
-      if (stdout == "") {
-        exec('sails lift', { cwd: '../Users/dogukan/APIs/Device24' }, function(error, stdout, stderr) {
+    Collections.findOne({
+      where: { userName: userName, apiName: apiName }
+    }).exec(function(err, collection) {
+      if (err) { return console.error(err); } 
+
+      var port = collection.port;
+
+      exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+        if (error) { return console.error(error); } 
+
+        if (stdout == "") {
+          exec('sails lift', { cwd: '../Users/' + userName + '/APIs/' + apiName }, function(error, stdout, stderr) {
+            
+          });
           
-        });
-        
-        return res.json({
-          todo: 'API has started'
-        });
-        
-      }
+          return res.json({
+            response: 'API has been started'
+          });
+          
+        }
+
+      });
 
     });
 
@@ -302,24 +397,37 @@ module.exports = {
    */
   stopApi: function (req, res) {
     var params = req.params.all();
+    var userName = params.userName;
+    var apiName = params.apiName;
     var port = params.port; // TODO: will be changed after port management takes place
 
-    var exec = require('child_process').exec;
-    exec('netstat -ano | find "LISTENING" | find "' + port + '"', function(error, stdout, stderr) {
-      if (stdout != "") {
-        var stringData = stdout.toString().split("LISTENING");
-        var stringData2 = stringData[2].toString().split("       ");
-        var pid = stringData[1].toString().split("\n");
+    Collections.findOne({
+      where: { userName: userName, apiName: apiName }
+    }).exec(function(err, collection) {
+      if (err) { return console.error(err); } 
 
-        exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
+      var port = collection.port;
 
-        });
+      var exec = require('child_process').exec;
+      exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+        if (err) { return console.error(err); } 
+        
+        if (stdout != "") {
+          var stringData = stdout.toString().split("LISTENING");
+          var stringData2 = stringData[2].toString().split("       ");
+          var pid = stringData[1].toString().split("\n");
 
-        return res.json({
-          todo: 'API has stopped'
-        });
+          exec('taskkill /pid ' + pid[0].toString() + ' /F', function(error, stdout, stderr) {
 
-      }
+          });
+
+          return res.json({
+            response: 'API has been stopped'
+          });
+
+        }
+
+      });
 
     });
 

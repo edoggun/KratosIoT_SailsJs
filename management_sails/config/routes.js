@@ -41,9 +41,13 @@ module.exports.routes = {
   'post /User/get' : 'UserController.get',
   'get /User/getAll:' : 'UserController.getAll',
   'post /User/getDbKeyForUser' : 'UserController.getDbKeyForUser',
-  'post /API/createApi' : 'APIController.createApi',
-  'post /API/uploadApi' : 'APIController.uploadApi',
-  'delete /API/deleteApi' : 'APIController.deleteApi'
+  'post /API/createStandardApi' : 'APIController.createStandardApi',
+  'post /API/createCustomApi' : 'APIController.createCustomApi',
+  'post /API/updateApi' : 'APIController.updateApi',
+  'delete /API/deleteApi' : 'APIController.deleteApi',
+  'post /API/startApi' : 'APIController.startApi',
+  'post /API/stopApi' : 'APIController.stopApi'
+
 
   /***************************************************************************
   *                                                                          *
