@@ -11,7 +11,11 @@ module.exports = {
 
   	userName : { type: 'string'},
 
-  	collectionName : { type: 'string' }
+  	collectionName : { type: 'string' },
+
+  	port : { type: 'integer'},
+
+  	isGenericApi : { type: 'boolean'}
 
   },
   

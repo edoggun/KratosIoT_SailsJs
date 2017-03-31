@@ -32,8 +32,9 @@ module.exports = {
         where: { isGenericApi: true },
         sort: 'port DESC'
       }).exec(function(err, collections) {
+
         var port;
-        if (collections) {
+        if (collections[0]) {
           var latestPort = collections[0].port;
           port = latestPort + 1;
         } else {
@@ -50,18 +51,18 @@ module.exports = {
 
         // Open management db
         admin_db.open(function(err, admin_db) {
-          if (err) { return console.error(err); }
+          if (err) { return res.serverError(); }
 
           var adminDb = admin_db.admin();
           // Authenticate using admin control over db
           adminDb.authenticate(admin, password, function (err, result) {
-            if (err) { return console.error(err); }
+            if (err) { return res.serverError(); }
 
             var collection = admin_db.collection("Users");
 
             // Insert a single document
             collection.insert({userName: userName, status: 'ACT', dbKey: dbKey, port: port}, function (err) {
-              if (err) { return console.error(err); }
+              if (err) { return res.serverError(); }
             });
 
             admin_db.close();
@@ -76,12 +77,12 @@ module.exports = {
 
         // Open user db
         user_db.open(function(err, user_db) {
-          if (err) { return console.error(err); }
+          if (err) { return res.serverError(); }
 
           var adminDb = user_db.admin();
           // Authenticate using admin control over db
           adminDb.authenticate(admin, password, function (err, result) {
-            if (err) { return console.error(err); }
+            if (err) { return res.serverError(); }
 
             // Add user to the database
             user_db.addUser(userName, dbKey, {
@@ -89,7 +90,7 @@ module.exports = {
                     "readWrite"
                   ]   
             }, function(err, result) {
-                if (err) { return console.error(err); }
+                if (err) { return res.serverError(); }
                   
                 user_db.close();
 
@@ -113,29 +114,29 @@ module.exports = {
 
         // If Api type is generic, then copy standard (ready) api that is located in main directory to user's APIs directory
         fs.copy(stdApiFolderLoc, apiFolderLoc, function(err) {        
-          if (err) { return console.error(err); }    
+          if (err) { return res.serverError(); }    
 
           // Wait for a second before finishing up, to ensure we have written the item to disk
           setTimeout(function() {
             // Change port number with the one we get from req in local file
             fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
-              if (err) { return console.error(err); }
+              if (err) { return res.notFound(); }
                            
               var port = params.port;
 
               var result = data.replace(/$PORT_NO/g, port);
 
               fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
-                if (err) { return console.error(err); }
+                if (err) { return res.notFound(); }
 
                 // Change user name global param with the one we get from req
                 fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
-                  if (err) { return console.error(err); }
+                  if (err) { return res.notFound(); }
                                             
                   var result = data.replace(/$USER_NAME/g, userName);
 
                   fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
-                    if (err) { return console.error(err); }
+                    if (err) { return res.notFound(); }
 
                     return res.json({
                       response: 'User: ' + userName + ' with dbKey: ' + dbKey + ' is successfully created'
@@ -179,14 +180,14 @@ module.exports = {
 
         var api_collection = admin_db.collection('Definitions');
 
-        api_collection.find().sort({timeStamp: -1}).toArray(function(err, docs) {
+        api_collection.find().sort({timeStamp: -1}).limit(1).toArray(function(err, doc) {
 
-          console.log(api_collection.find().sort({timeStamp: -1}).limit(1).toString())
+          console.log(doc)
 
           admin_db.close();
 
           return res.json({
-            response: docs
+            response: doc
           });
 
         });
@@ -210,25 +211,32 @@ module.exports = {
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {
-      if (err) { return console.error(err); }
+      if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
       // Authenticate using admin control over db
       adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return console.error(err); }
+        if (err) { return res.serverError(); }
 
         var collection = admin_db.collection("Users");
         // Update the document with an atomic operator
-        collection.update({userName: userName}, {$set:{status: 'DEACT'}});
+        collection.update({userName: userName}, {$set:{status: 'DEACT'}}, function(err, result) {
+          if (err) { return res.notFound(); }
 
-        // Remove user from file system
-        var dir = "../Users/" + userName;
-        fs.removeSync(dir);
+          admin_db.close();
 
-        admin_db.close();
+          // Remove user from file system
+          var dir = "../Users/" + userName;
+          fs.removeSync(dir);
 
-        return res.json({
-          response: 'User ' + userName + ' is successfully removed'
+          // Wait for 5 seconds before deleting User from file system properly
+          setTimeout(function() {
+            return res.json({
+              response: 'User ' + userName + ' is successfully removed'
+            });
+
+           }, 500);
+
         });
 
       });
@@ -250,20 +258,25 @@ module.exports = {
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {
-      if (err) { return console.error(err); }
+      if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
       // Authenticate using admin control over db
       adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return console.error(err); }
+        if (err) { return res.serverError(); }
 
         // Peform a simple find and return one document
         var collection = admin_db.collection("Users");
 
-        admin_db.close();
+        collection.findOne({userName: userName}, function(err, doc) {
+          if (err) { return res.notFound(); }
 
-        return res.json({
-          response: doc
+          admin_db.close();
+
+          return res.json({
+            response: doc
+          });
+
         });
 
       });
@@ -283,20 +296,25 @@ module.exports = {
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {
-      if (err) { return console.error(err); }
+      if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
       // Authenticate using admin control over db
       adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return console.error(err); }
+        if (err) { return res.serverError(); }
 
         // Peform a simple find and return one document
         var collection = admin_db.collection("Users");
 
-        admin_db.close();
+        collection.find().toArray(function(err, docs) {
+          if (err) { return res.notFound(); }
 
-        return res.json({
-          response: docs
+          admin_db.close();
+
+          return res.json({
+            response: docs
+          });
+
         });
 
       });
@@ -317,20 +335,25 @@ module.exports = {
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {
-      if (err) { return console.error(err); }
+      if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
       // Authenticate using admin control over db
       adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return console.error(err); }
+        if (err) { return res.serverError(); }
 
         // Peform a simple find and return one document
         var collection = admin_db.collection("Users");
 
-        admin_db.close();
+        collection.findOne({userName: userName}, function(err, doc) {
+          if (err) { return res.notFound(); }
 
-        return res.json({
-          dbKey: doc.dbKey
+          admin_db.close();
+
+          return res.json({
+            dbKey: doc.dbKey
+          });
+
         });
 
       });
