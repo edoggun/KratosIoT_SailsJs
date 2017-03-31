@@ -24,7 +24,6 @@ module.exports = {
   /**
    * `UserController.create()`
    */
-
   create: function (req, res) {
     var params = req.params.all();
     var userName = params.userName;
@@ -165,14 +164,35 @@ module.exports = {
   update: function (req, res) {
 
 
-    spawn('sails lift', [], { 
-      cwd: 'C:/sailsProjects/KratosIoT_SailsJs/Users/dogukan/APIs/Device24', 
-      detached: true, 
-      stdio: 'ignore' 
-    });
+    // Add user deinition to user collection in management db
+    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
 
-    return res.json({
-      response: 'API has been started'
+    // Open management db
+    admin_db.open(function(err, admin_db) {
+      if (err) { return console.error(err); }
+
+      var adminDb = admin_db.admin();
+
+      // Authenticate using admin control over db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return console.error(err); }
+
+        var api_collection = admin_db.collection('Definitions');
+
+        api_collection.find().sort({timeStamp: -1}).toArray(function(err, docs) {
+
+          console.log(api_collection.find().sort({timeStamp: -1}).limit(1).toString())
+
+          admin_db.close();
+
+          return res.json({
+            response: docs
+          });
+
+        });
+         
+      });
+
     });
 
   },

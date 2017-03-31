@@ -50,9 +50,10 @@ module.exports = {
         var thingName = params.thingName ? params.thingName : "";
         var appApiName = params.appApiName ? params.appApiName : "";
         var appName = params.appName ? params.appName : "";
+        var date = new Date();
 
         api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: true, timeStamp: params.timeStamp, status: 'ACT'}, 
+                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: true, timeStamp: date, status: 'ACT'}, 
                                function (err, result) {
               
           if (err) { return console.error(err); } 
@@ -133,6 +134,7 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
     var apiName = params.apiName;
+    var apiType = params.apiType;
 
     Collections.find({
       where: { userName: userName, isGenericApi: false },
@@ -170,9 +172,10 @@ module.exports = {
           var thingName = params.thingName ? params.thingName : "";
           var appApiName = params.appApiName ? params.appApiName : "";
           var appName = params.appName ? params.appName : "";
+          var date = new Date();
 
           api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                                 appApiName: appApiName, appName: appName, userName: userName, isGenericApi: false, timeStamp: params.timeStamp, status: 'ACT'}, 
+                                 appApiName: appApiName, appName: appName, userName: userName, isGenericApi: false, timeStamp: date, status: 'ACT'}, 
                                  function (err, result) {
                 
             if (err) { return console.error(err); } 
@@ -185,12 +188,31 @@ module.exports = {
 
       });     
      
+
       var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
       var destLoc = '../Users/' + userName + '/APIs/';
 
       fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
+
+      // Wait for 20 seconds before overwriting local file with port number
+      setTimeout(function() {
+        var apiLocalConfigFileLoc = destLoc + apiName + '/config/local.js';
+
+        // Change port number 
+        fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
+          if (err) { return console.error(err); }  
+
+          var result = data.replace(/$PORT_NO/g, port);
+
+          fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
+            if (err) { return console.error(err); }
+          });
+
+        });
+
+      }, 2000);
         
-      // Wait for 20 seconds before finishing up
+      // Wait for 3 seconds before finishing up
       setTimeout(function() {
 
         return res.json({
@@ -199,7 +221,7 @@ module.exports = {
           apiURL: 'http://localhost:' + port.toString() + '/CustomAPI'
         });
 
-      }, 2000);   
+      }, 500);   
 
     });
 
@@ -245,24 +267,43 @@ module.exports = {
                 
                 fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
                   
-                // Wait for 20 seconds before finishing up
+                // Wait for 20 seconds before overwriting local file with port number
                 setTimeout(function() {
-                  // Start api
-                  exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
-                    if (error) { return console.error(error); }
 
-                    if (stdout == "") {
-                      exec('sails lift', { cwd: '../Users/' + userName + '/APIs/' + apiName }, function(error, stdout, stderr) {
-                        if (error) { return console.error(error); }
-                      });
+                  var apiLocalConfigFileLoc = destLoc + apiName + '/config/local.js';
 
-                      return res.json({
-                        response: 'API has been updated'
-                      });
+                  // Change port number 
+                  fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
+                    if (err) { return console.error(err); }  
 
-                    }
+                    var result = data.replace(/$PORT_NO/g, port);
+
+                    fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
+                      if (err) { return console.error(err); }
+                    });
 
                   });
+
+                  // Wait for 3 seconds before lifting the api
+                  setTimeout(function() {
+                    // Start api
+                    exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+                      if (error) { return console.error(error); }
+
+                      if (stdout == "") {
+                        exec('sails lift', { cwd: '../Users/' + userName + '/APIs/' + apiName }, function(error, stdout, stderr) {
+                          if (error) { return console.error(error); }
+                        });
+
+                        return res.json({
+                          response: apiName + ' API has successfully been updated'
+                        });
+
+                      }
+
+                    });
+
+                  }, 300);
 
                 }, 2000); 
               
@@ -336,7 +377,7 @@ module.exports = {
                 setTimeout(function() {
 
                   return res.json({
-                    response: apiName + 'is successfully deleted'
+                    response: apiName + 'has successfully been deleted'
                   });
 
                 }, 1000);
@@ -380,7 +421,7 @@ module.exports = {
           });
           
           return res.json({
-            response: 'API has been started'
+            response: apiName + ' API has successfully been started'
           });
           
         }
@@ -399,7 +440,6 @@ module.exports = {
     var params = req.params.all();
     var userName = params.userName;
     var apiName = params.apiName;
-    var port = params.port; // TODO: will be changed after port management takes place
 
     Collections.findOne({
       where: { userName: userName, apiName: apiName }
@@ -422,7 +462,7 @@ module.exports = {
           });
 
           return res.json({
-            response: 'API has been stopped'
+            response: apiName + ' API has successfully been stopped'
           });
 
         }
@@ -432,6 +472,81 @@ module.exports = {
     });
 
   },
+
+  /**
+   * `APIController.getApiDetails()`
+   */
+  getApiDetails: function (req, res) {
+    var params = req.params.all();
+    var userName = params.userName;
+    var apiName = params.apiName;
+
+    Collections.findOne({
+      where: { userName: userName, apiName: apiName }
+    }).exec(function(err, collection) {
+      if (err) { return console.error(err); } 
+
+      var port = collection.port;
+
+      exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(error, stdout, stderr) {
+        if (error) { return console.error(error); } 
+
+        var apiStatus;
+
+        if (stdout == "") {
+          apiStatus = 'Stopped';  
+        } else {
+          apiStatus = 'Started';
+        }
+
+        // Create user db to handle user defined api data collections
+        var userDB = userName;
+        var user_db = new Db(userDB, new Server(dbServer, 27017));
+
+        // Open management db
+        user_db.open(function(err, user_db) {
+          if (err) { return console.error(err); }
+
+          var adminDb = user_db.admin();
+
+          // Authenticate using admin control over db
+          adminDb.authenticate(admin, password, function (err, result) {
+            if (err) { return console.error(err); }
+
+            var collection = user_db.collection(apiName);
+
+            // Retrieve the statistics for the collection
+            collection.stats(function(err, stats) {
+              var collectionDocCount = stats.count;
+              var collectionSize = stats.size;
+
+              // Peform a simple find and return all the documents
+              collection.find().toArray(function(err, docs) {
+
+
+              });
+
+              user_db.close();
+
+              return res.json({
+                apiName: apiName,
+                apiStatus: apiStatus,
+                collectionDocCount: collectionDocCount,
+                collectionSize: collectionSize
+              });
+
+            });
+
+          });
+
+        });
+
+      });
+
+    });
+
+  },
+
 
 };
 
