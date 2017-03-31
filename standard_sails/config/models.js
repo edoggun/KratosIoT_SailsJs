@@ -17,7 +17,7 @@ module.exports.models = {
   * connections (see `config/connections.js`)                                *
   *                                                                          *
   ***************************************************************************/
-  connection: 'someMongodbServer',
+  // connection: 'localDiskDb',
 
   /***************************************************************************
   *                                                                          *
@@ -27,6 +27,10 @@ module.exports.models = {
   * See http://sailsjs.org/#!/documentation/concepts/ORM/model-settings.html  *
   *                                                                          *
   ***************************************************************************/
-  // migrate: 'alter'
-
+  migrate: 'safe' ,
+  connection: 'mongodbServer' ,
+  'post /api/:apiName?': 'APIController.pushData',
+  'get  /api/:apiName?': 'APIController.getLatestData',
+  'get  /api/:apiName?': 'APIController.getDataWithCount',
+  'get /api/:apiName?': 'APIController.getDataWithTimeInterval'
 };

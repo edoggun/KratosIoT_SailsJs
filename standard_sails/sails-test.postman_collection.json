@@ -1,0 +1,130 @@
+{
+	"variables": [],
+	"info": {
+		"name": "sails-test",
+		"_postman_id": "d141fd3b-34df-20b1-6cd3-fe07f7ef32b2",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create",
+			"request": {
+				"url": "localhost:1337/gateway/sendMessage",
+				"method": "POST",
+				"header": [
+					{
+						"key": "collectionid",
+						"value": "bornovagw",
+						"description": ""
+					},
+					{
+						"key": "username",
+						"value": "USERNAME",
+						"description": ""
+					},
+					{
+						"key": "dbkey",
+						"value": "DB_KEY",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"gatewayName\": \"newgateway\",\n\t\"userName\": \"depark\",\n\t\"data\": \"entirelynewdata3\",\n\t\"readTime\": \"2018-10-29T22:25:43.511Z\"\n}"
+				},
+				"description": "create new record in database"
+			},
+			"response": []
+		},
+		{
+			"name": "Find",
+			"request": {
+				"url": "localhost:1337/gateway/getLatestMessage",
+				"method": "GET",
+				"header": [
+					{
+						"key": "username",
+						"value": "USERNAME",
+						"description": ""
+					},
+					{
+						"key": "dbkey",
+						"value": "DB_KEY",
+						"description": ""
+					},
+					{
+						"key": "collectionid",
+						"value": "bornovagw",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"gatewayName\": \"tinaztepegw\",\n\t\"userName\": \"depark\",\n\t\"data\": \"a1a2a3a4\",\n\t\"readTime\": \"2016-06-23T18:25:43.511Z\"\n}"
+				},
+				"description": "find last record in db"
+			},
+			"response": []
+		},
+		{
+			"name": "Find(with count)",
+			"request": {
+				"url": "localhost:1337/gateway/getMessageWithCount",
+				"method": "GET",
+				"header": [
+					{
+						"key": "username",
+						"value": "USERNAME",
+						"description": ""
+					},
+					{
+						"key": "dbkey",
+						"value": "DB_KEY",
+						"description": ""
+					},
+					{
+						"key": "collectionid",
+						"value": "bornovagw",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": "get last records depends on count"
+			},
+			"response": []
+		},
+		{
+			"name": "Find(time interval)",
+			"request": {
+				"url": "localhost:1337/gateway/getMessagesWithInterval?start=2016-06-25T20:25:43.511Z&end=2017-10-25T11:00",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "username",
+						"value": "USERNAME",
+						"description": ""
+					},
+					{
+						"key": "dbkey",
+						"value": "DB_KEY",
+						"description": ""
+					},
+					{
+						"key": "collecitonid",
+						"value": "bornovagw",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": "Get Messagges with Interval"
+			},
+			"response": []
+		}
+	]
+}

@@ -15,9 +15,6 @@ module.exports = {
 
     data : { type: 'json' }
 
-  },
-
-  tableName : 'COLLECTION_NAME'
-
+  }
 };
 
