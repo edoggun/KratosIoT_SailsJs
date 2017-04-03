@@ -29,7 +29,7 @@ module.exports = {
 
     appApiName : { type: 'string' },
 
-    timestamp : { type: 'string' }
+    timestamp : { type: 'date' }
     
   }
   

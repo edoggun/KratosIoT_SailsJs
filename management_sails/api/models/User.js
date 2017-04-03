@@ -13,7 +13,9 @@ module.exports = {
 
     port : { type: 'integer' },
 
-  	status : { type: 'string' }
+  	status : { type: 'string' },
+
+  	timestamp : { type: 'date' }
   	
   }
   

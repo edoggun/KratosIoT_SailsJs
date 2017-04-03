@@ -5,18 +5,16 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
-var spawn = require('child_process').spawn;
+//var spawn = require('child_process').spawn;
 var fs = require('fs-extra');
 var generator = require('generate-password');
 var Db = require('mongodb').Db,
-    Server = require('mongodb').Server,
-    assert = require('assert');
-
-var admin = "admin";
-var password = "admin123";
-var dbServer = "localhost";
-var dbServerPort = "27017";
-var adminDB = "admin"
+    Server = require('mongodb').Server;
+    
+var admin = 'admin';
+var password = 'admin123';
+var dbServer = 'localhost';
+var dbServerPort = '27017';
 
 
 module.exports = {
@@ -25,8 +23,8 @@ module.exports = {
    * `UserController.create()`
    */
   create: function (req, res) {
-    var params = req.params.all();
-    var userName = params.userName;
+    var userName = req.headers.username;
+    var timeStamp = new Date();
 
     Collections.find({
         where: { isGenericApi: true },
@@ -45,10 +43,9 @@ module.exports = {
           length: 16,
           numbers: true
         });
-             
+        
         // Add user deinition to user collection in management db
-        var admin_db = new Db(adminDB, new Server(dbServer, 27017));
-
+        var admin_db = new Db(admin, new Server(dbServer, 27017));
         // Open management db
         admin_db.open(function(err, admin_db) {
           if (err) { return res.serverError(); }
@@ -61,7 +58,7 @@ module.exports = {
             var collection = admin_db.collection("Users");
 
             // Insert a single document
-            collection.insert({userName: userName, status: 'ACT', dbKey: dbKey, port: port}, function (err) {
+            collection.insert({userName: userName, status: 'ACT', dbKey: dbKey, port: port, timeStamp: timeStamp}, function (err) {
               if (err) { return res.serverError(); }
             });
 
@@ -122,9 +119,7 @@ module.exports = {
             fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
               if (err) { return res.notFound(); }
                            
-              var port = params.port;
-
-              var result = data.replace(/$PORT_NO/g, port);
+              var result = data.replace(/_PORT_NO/g, port);
 
               fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
                 if (err) { return res.notFound(); }
@@ -133,7 +128,7 @@ module.exports = {
                 fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
                   if (err) { return res.notFound(); }
                                             
-                  var result = data.replace(/$USER_NAME/g, userName);
+                  var result = data.replace(/_USER_NAME/g, userName);
 
                   fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
                     if (err) { return res.notFound(); }
@@ -165,36 +160,37 @@ module.exports = {
   update: function (req, res) {
 
 
-    // Add user deinition to user collection in management db
-    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+    var admin_db = new Db(admin, new Server(dbServer, 27017));
 
-    // Open management db
-    admin_db.open(function(err, admin_db) {
-      if (err) { return console.error(err); }
+        // Open management db
+        admin_db.open(function(err, admin_db) {
+          if (err) { return res.serverError(); }
 
-      var adminDb = admin_db.admin();
+          var adminDb = admin_db.admin();
+          console.log(admin_db);
+          // Authenticate using admin control over db
+          adminDb.authenticate(admin, password, function (err, result) {
+            if (err) { return res.serverError(); }
 
-      // Authenticate using admin control over db
-      adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return console.error(err); }
+            var collection = admin_db.collection("Users");
 
-        var api_collection = admin_db.collection('Definitions');
+            // Insert a single document
+            collection.insert({userName: 'userName', status: 'ACT', dbKey: 'dbKey', port: 'port', timeStamp: 'timeStamp'}, function (err) {
+              if (err) { return res.serverError(); }
+            });
 
-        api_collection.find().sort({timeStamp: -1}).limit(1).toArray(function(err, doc) {
+            admin_db.close();
 
-          console.log(doc)
+            return res.json({
+              response: 'userName'
+            });
 
-          admin_db.close();
 
-          return res.json({
-            response: doc
           });
 
         });
-         
-      });
 
-    });
+    
 
   },
 
@@ -203,11 +199,10 @@ module.exports = {
    * `UserController.delete()`+
    */
   delete: function (req, res) {
-    var params = req.params.all();
-    var userName = params.userName;
+    var userName = req.headers.username;
 
     //Soft delete from DB by updating the entry column ACT->DEACT
-    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+    var admin_db = new Db(admin, new Server(dbServer, 27017));
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {
@@ -250,11 +245,10 @@ module.exports = {
    * `UserController.get()`
    */
   get: function (req, res) {
-    var params = req.params.all();
-    var userName = params.userName;
+    var userName = req.headers.username;
 
     //Soft delete from DB by updating the entry column ACT->DEACT
-    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+    var admin_db = new Db(admin, new Server(dbServer, 27017));
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {
@@ -292,7 +286,7 @@ module.exports = {
   getAll: function (req, res) {
 
     //Soft delete from DB by updating the entry column ACT->DEACT
-    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+    var admin_db = new Db(admin, new Server(dbServer, 27017));
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {
@@ -327,11 +321,10 @@ module.exports = {
    * `UserController.getDbKeyForUser()`
    */
   getDbKeyForUser: function (req, res) {
-    var params = req.params.all();
-    var userName = params.userName;
+    var userName = req.headers.username;
 
     //Soft delete from DB by updating the entry column ACT->DEACT
-    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+    var admin_db = new Db(admin, new Server(dbServer, 27017));
 
     // Fetch a collection to insert document into
     admin_db.open(function(err, admin_db) {

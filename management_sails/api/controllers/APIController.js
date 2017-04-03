@@ -12,11 +12,10 @@ var fse = require('fs-extra');
 var Db = require('mongodb').Db,
     Server = require('mongodb').Server;
 
-var admin = "admin";
-var password = "admin123";
-var dbServer = "localhost";
-var dbServerPort = "27017";
-var adminDB = "admin";
+var admin = 'admin';
+var password = 'admin123';
+var dbServer = 'localhost';
+var dbServerPort = '27017';
 
 
 module.exports = {
@@ -25,13 +24,13 @@ module.exports = {
    * `APIController.createStandardApi()`
    */
   createStandardApi: function (req, res) {
+    var userName = req.headers.username;
     var params = req.params.all();
-    var userName = params.userName;
     var apiName = params.apiName;
     var apiType = params.apiType;
 
     // Add user deinition to user collection in management db
-    var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+    var admin_db = new Db(admin, new Server(dbServer, 27017));
 
     // Open management db
     admin_db.open(function(err, admin_db) {
@@ -50,10 +49,10 @@ module.exports = {
         var thingName = params.thingName ? params.thingName : "";
         var appApiName = params.appApiName ? params.appApiName : "";
         var appName = params.appName ? params.appName : "";
-        var date = new Date();
+        var timeStamp = new Date();
 
         api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: true, timeStamp: date, status: 'ACT'}, 
+                               appApiName: appApiName, appName: appName, userName: userName, isGenericApi: true, timeStamp: timeStamp, status: 'ACT'}, 
                                function (err, result) {
               
           if (err) { return res.serverError(); } 
@@ -134,8 +133,8 @@ module.exports = {
    * `APIController.createCustomApi()`
    */
   createCustomApi: function (req, res) {
+    var userName = req.headers.username;
     var params = req.params.all();
-    var userName = params.userName;
     var apiName = params.apiName;
     var apiType = params.apiType;
 
@@ -157,7 +156,7 @@ module.exports = {
       });   
 
       // Add user deinition to user collection in management db
-      var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+      var admin_db = new Db(admin, new Server(dbServer, 27017));
 
       // Open management db
       admin_db.open(function(err, admin_db) {
@@ -235,8 +234,8 @@ module.exports = {
    * `APIController.uploadApi()`
    */
   updateApi: function (req, res) {
+    var userName = req.headers.username;
     var params = req.params.all();
-    var userName = params.userName;
     var apiName = params.apiName;
     var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
     var destLoc = '../Users/' + userName + '/APIs/';
@@ -333,8 +332,8 @@ module.exports = {
    * `APIController.deleteApi()`
    */
   deleteApi: function (req, res) {
+    var userName = req.headers.username;
     var params = req.params.all();
-    var userName = params.userName;
     var apiName = params.apiName;
     var fileLoc = '../Users/' + userName + '/APIs/' + apiName;
 
@@ -364,7 +363,7 @@ module.exports = {
         // Wait for 5 seconds before going on to stop API properly
         setTimeout(function(){
           //Soft delete from DB by updating the entry column ACT->DEACT
-          var admin_db = new Db(adminDB, new Server(dbServer, 27017));
+          var admin_db = new Db(admin, new Server(dbServer, 27017));
 
           // Fetch a collection to insert document into
           admin_db.open(function(err, admin_db) {
@@ -410,8 +409,8 @@ module.exports = {
    * `APIController.startApi()`
    */
   startApi: function (req, res) {
+    var userName = req.headers.username;
     var params = req.params.all();
-    var userName = params.userName;
     var apiName = params.apiName;
 
     Collections.findOne({
@@ -448,8 +447,8 @@ module.exports = {
    * `APIController.stopApi()`
    */
   stopApi: function (req, res) {
+    var userName = req.headers.username;
     var params = req.params.all();
-    var userName = params.userName;
     var apiName = params.apiName;
 
     Collections.findOne({
@@ -490,8 +489,8 @@ module.exports = {
    * `APIController.getApiDetails()`
    */
   getApiDetails: function (req, res) {
+    var userName = req.headers.username;
     var params = req.params.all();
-    var userName = params.userName;
     var apiName = params.apiName;
 
     Collections.findOne({

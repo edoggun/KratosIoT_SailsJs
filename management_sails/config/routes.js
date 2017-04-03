@@ -46,7 +46,8 @@ module.exports.routes = {
   'post /API/updateApi' : 'APIController.updateApi',
   'delete /API/deleteApi' : 'APIController.deleteApi',
   'post /API/startApi' : 'APIController.startApi',
-  'post /API/stopApi' : 'APIController.stopApi'
+  'post /API/stopApi' : 'APIController.stopApi',
+  'post /API/getApiDetails' : 'APIController.getApiDetails'
 
 
   /***************************************************************************

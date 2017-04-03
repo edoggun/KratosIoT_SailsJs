@@ -12,7 +12,7 @@
   assert = require('assert');
 
   // Global username variable
-  var g_uname = "$USER_NAME";
+  var g_uname = "_USER_NAME";
 
   // Error messages
   var colNotFound = 'Collection not found!';
