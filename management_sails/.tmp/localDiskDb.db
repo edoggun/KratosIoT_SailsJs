@@ -1,0 +1,134 @@
+{
+  "data": {
+    "api": [],
+    "collections": [
+      {
+        "userName": "dodo",
+        "collectionName": "Device24",
+        "port": 40000,
+        "isGenericApi": true,
+        "createdAt": "2017-04-04T08:21:07.183Z",
+        "updatedAt": "2017-04-04T08:21:07.192Z",
+        "id": 1
+      },
+      {
+        "userName": "dodo",
+        "collectionName": "Device111",
+        "port": 45000,
+        "isGenericApi": false,
+        "createdAt": "2017-04-04T11:37:20.411Z",
+        "updatedAt": "2017-04-04T11:37:20.425Z",
+        "id": 2
+      }
+    ],
+    "user": []
+  },
+  "schema": {
+    "api": {
+      "apiType": {
+        "type": "string"
+      },
+      "apiName": {
+        "type": "string"
+      },
+      "userName": {
+        "type": "string"
+      },
+      "isGenericApi": {
+        "type": "boolean"
+      },
+      "gatewayName": {
+        "type": "string"
+      },
+      "deviceName": {
+        "type": "string"
+      },
+      "sensorName": {
+        "type": "string"
+      },
+      "thingName": {
+        "type": "string"
+      },
+      "appName": {
+        "type": "string"
+      },
+      "appApiName": {
+        "type": "string"
+      },
+      "timestamp": {
+        "type": "date"
+      },
+      "id": {
+        "type": "integer",
+        "autoIncrement": true,
+        "primaryKey": true,
+        "unique": true
+      },
+      "createdAt": {
+        "type": "datetime"
+      },
+      "updatedAt": {
+        "type": "datetime"
+      }
+    },
+    "collections": {
+      "userName": {
+        "type": "string"
+      },
+      "collectionName": {
+        "type": "string"
+      },
+      "port": {
+        "type": "integer"
+      },
+      "isGenericApi": {
+        "type": "boolean"
+      },
+      "createdAt": {
+        "type": "date"
+      },
+      "id": {
+        "type": "integer",
+        "autoIncrement": true,
+        "primaryKey": true,
+        "unique": true
+      },
+      "updatedAt": {
+        "type": "datetime"
+      }
+    },
+    "user": {
+      "userName": {
+        "type": "string"
+      },
+      "port": {
+        "type": "integer"
+      },
+      "status": {
+        "type": "string"
+      },
+      "timestamp": {
+        "type": "date"
+      },
+      "id": {
+        "type": "integer",
+        "autoIncrement": true,
+        "primaryKey": true,
+        "unique": true
+      },
+      "createdAt": {
+        "type": "datetime"
+      },
+      "updatedAt": {
+        "type": "datetime"
+      }
+    }
+  },
+  "counters": {
+    "api": {},
+    "collections": {
+      "id": 2
+    },
+    "user": {}
+  }
+}

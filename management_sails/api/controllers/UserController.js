@@ -32,7 +32,7 @@ module.exports = {
       }).exec(function(err, collections) {
 
         var port;
-        if (collections[0]) {
+        if (collections.length > 0) {
           var latestPort = collections[0].port;
           port = latestPort + 1;
         } else {
@@ -158,37 +158,6 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
-
-
-    var admin_db = new Db(admin, new Server(dbServer, 27017));
-
-        // Open management db
-        admin_db.open(function(err, admin_db) {
-          if (err) { return res.serverError(); }
-
-          var adminDb = admin_db.admin();
-          console.log(admin_db);
-          // Authenticate using admin control over db
-          adminDb.authenticate(admin, password, function (err, result) {
-            if (err) { return res.serverError(); }
-
-            var collection = admin_db.collection("Users");
-
-            // Insert a single document
-            collection.insert({userName: 'userName', status: 'ACT', dbKey: 'dbKey', port: 'port', timeStamp: 'timeStamp'}, function (err) {
-              if (err) { return res.serverError(); }
-            });
-
-            admin_db.close();
-
-            return res.json({
-              response: 'userName'
-            });
-
-
-          });
-
-        });
 
     
 
