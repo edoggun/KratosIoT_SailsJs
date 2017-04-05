@@ -6,14 +6,15 @@
  */
 
 //var spawn = require('child_process').spawn;
-var fs = require('fs-extra');
-var generator = require('generate-password');
-var Db = require('mongodb').Db,
+const path = require('path');
+const fs = require('fs-extra');
+const generator = require('generate-password');
+const Db = require('mongodb').Db,
     Server = require('mongodb').Server;
     
-var admin = 'admin';
-var password = 'admin123';
-var dbServer = 'localhost';
+const admin = 'admin';
+const password = 'admin123';
+const dbServer = 'localhost';
 
 
 module.exports = {
@@ -99,16 +100,16 @@ module.exports = {
         });
 
         // Creating user directory along with APIs and APPs folders under it
-        var dirAPIs = '../Users/' + userName + '/APIs';
+        var dirAPIs = path.join('..', 'Users', userName, 'APIs');
         fs.ensureDirSync(dirAPIs);
-        var dirAPPs = '../Users/' + userName + '/APPs';
+        var dirAPPs = path.join('..', 'Users', userName, 'APPs');
         fs.ensureDirSync(dirAPPs);
 
-        var stdApiFolderLoc = '../standard_sails';
-        var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
-        var apiLocalConfigFileLoc = apiFolderLoc + '/config/local.js';
-        var apiConnectionConfigFileLoc = apiFolderLoc + '/config/connections.js';
-        var apiControllerLoc = apiFolderLoc + '/api/controllers/ApiController.js'
+        var stdApiFolderLoc = path.join('..', 'standard_sails');
+        var apiFolderLoc = path.join('..', 'Users', userName, 'APIs', 'standard_sails');
+        var apiLocalConfigFileLoc = path.join('..', 'Users', userName, 'APIs', 'standard_sails', 'config', 'local.js');
+        var apiConnectionConfigFileLoc = path.join('..', 'Users', userName, 'APIs', 'standard_sails', 'config', 'connections.js');
+        var apiControllerLoc = path.join('..', 'Users', userName, 'APIs', 'standard_sails', 'api', 'controllers', 'ApiController.js');
 
         // By default, copy standard (ready) api that is located in main directory to user's APIs directory
         fs.copy(stdApiFolderLoc, apiFolderLoc, function(err) {        
@@ -195,7 +196,7 @@ module.exports = {
           admin_db.close();
 
           // Remove user from file system
-          var userDirectory = "../Users/" + userName;
+          var userDirectory = path.join('..', 'Users', userName);
 
           fs.remove(userDirectory, function (err) {
             if (err) { return res.serverError(); }
@@ -203,7 +204,7 @@ module.exports = {
             // Wait for 5 seconds to ensure that the user directory is deleted
             setTimeout(function() {
               return res.json({
-                response: 'User ' + userName + ' is successfully removed'
+                response: 'User ' + userName + ' has been successfully removed'
               });
 
              }, 500);

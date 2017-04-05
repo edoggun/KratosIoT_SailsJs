@@ -5,16 +5,17 @@
  * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
  */
 
-var exec = require('child_process').exec;
-var unzip = require('unzip');
-var fs = require('fs');
-var fse = require('fs-extra');
-var Db = require('mongodb').Db,
+const exec = require('child_process').exec;
+const unzip = require('unzip');
+const path = require('path');
+const fs = require('fs');
+const fse = require('fs-extra');
+const Db = require('mongodb').Db,
     Server = require('mongodb').Server;
 
-var admin = 'admin';
-var password = 'admin123';
-var dbServer = 'localhost';
+const admin = 'admin';
+const password = 'admin123';
+const dbServer = 'localhost';
 
 
 module.exports = {
@@ -106,9 +107,9 @@ module.exports = {
 
               // Wait for 2 seconds to start file operations
               setTimeout(function() {
-                var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
-                var localUserDiskDbLoc = '.tmp/userDiskDb.db';
-                var userDiskDbLoc = apiFolderLoc + '/.tmp/userDiskDb.db';
+                var apiFolderLoc = path.join('..', 'Users', userName, 'APIs', 'standard_sails');
+                var localUserDiskDbLoc = path.join('.tmp', 'userDiskDb.db');
+                var userDiskDbLoc = path.join('..', 'Users', userName, 'APIs', 'standard_sails', '.tmp', 'userDiskDb.db');
 
                 // Copy user specific userDiskDb to user's std api location for further usage by std api
                 fse.copy(localUserDiskDbLoc, userDiskDbLoc, function(err) {     
@@ -122,7 +123,7 @@ module.exports = {
 
                       // If it is not being used, then lift the std api for the user by default after creation
                       if (stdout == "") {
-                        exec('sails lift', { cwd: '../Users/' + userName + '/APIs/standard_sails' }, function(err, stdout, stderr) {
+                        exec('sails lift', { cwd: apiFolderLoc }, function(err, stdout, stderr) {
                           
                         });
                           
@@ -215,15 +216,15 @@ module.exports = {
 
             admin_db.close();
 
-            var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
-            var destLoc = '../Users/' + userName + '/APIs/';
+            var fileLoc = path.join('..', 'UploadedAPIs', apiName + '.zip');
+            var destLoc = path.join('..', 'Users', userName, 'APIs');
 
             // Unzip the custom api that was uploaded to a specific directory location to user's APIs directory
             fs.createReadStream(fileLoc).pipe(unzip.Extract({ path: destLoc }));
 
             // Wait for 30 seconds before overwriting local file with port number
             setTimeout(function() {
-              var apiLocalConfigFileLoc = destLoc + apiName + '/config/local.js';
+              var apiLocalConfigFileLoc = path.join('..', 'Users', userName, 'APIs', apiName, 'config', 'local.js');
 
               // Change _PORT_NO with the one we set above in local.js file
               fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
@@ -268,8 +269,8 @@ module.exports = {
     var userName = req.headers.username;
     var params = req.params.all();
     var apiName = params.apiName;
-    var fileLoc = '../UploadedAPIs/' + apiName + '.zip';
-    var destLoc = '../Users/' + userName + '/APIs/';
+    var fileLoc = path.join('..', 'UploadedAPIs', apiName + '.zip');
+    var destLoc = path.join('..', 'Users', userName, 'APIs');
 
     // Find custom api's port from localDiskDb
     Collections.findOne({
@@ -297,8 +298,10 @@ module.exports = {
 
         // Wait for 10 seconds to make sure the api is stopped in case it was running
         setTimeout(function() {
+
+          var apiLoc = path.join('..', 'Users', userName, 'APIs', apiName);
           // Delete if there is any same named apis in the user's APIs directory
-          fse.remove(destLoc + apiName, function (err) {
+          fse.remove(apiLoc, function (err) {
             if (err) { return res.serverError(); }
 
             // Wait for 10 seconds to make sure api is deleted
@@ -310,7 +313,7 @@ module.exports = {
               // Wait for 45 seconds before overwriting local file with port number to make sure uploaded api is unzipped properly
               setTimeout(function() {
 
-                var apiLocalConfigFileLoc = destLoc + apiName + '/config/local.js';
+                var apiLocalConfigFileLoc = path.join('..', 'Users', userName, 'APIs', apiName, 'config', 'local.js');
 
                 // Change _PORT_NO with the one that was being used for the updated api
                 fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
@@ -324,7 +327,7 @@ module.exports = {
                     // Wait for 5 seconds before lifting the api
                     setTimeout(function() {
                       // Start api
-                      exec('sails lift', { cwd: '../Users/' + userName + '/APIs/' + apiName }, function(err, stdout, stderr) {
+                      exec('sails lift', { cwd: apiLoc }, function(err, stdout, stderr) {
                             
                       });
 
@@ -364,7 +367,7 @@ module.exports = {
     var userName = req.headers.username;
     var params = req.params.all();
     var apiName = params.apiName;
-    var fileLoc = '../Users/' + userName + '/APIs/' + apiName;
+    var fileLoc = path.join('..', 'Users', userName, 'APIs', apiName);
 
     // Find api's port from localDiskDb
     Collections.findOne({
@@ -464,7 +467,8 @@ module.exports = {
 
         // If it is not up, then lift the app
         if (stdout == "") {
-          exec('sails lift', { cwd: '../Users/' + userName + '/APIs/' + generalStdApiName }, function(err, stdout, stderr) {
+          var cwd = path.join('..', 'Users', userName, 'APIs', generalStdApiName);
+          exec('sails lift', { cwd: cwd }, function(err, stdout, stderr) {
             
           });
           
