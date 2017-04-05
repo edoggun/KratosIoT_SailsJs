@@ -36,18 +36,19 @@ module.exports.routes = {
     view: 'homepage'
   },
 
-  'post /User/create' : 'UserController.create',
-  'delete /User/delete' : 'UserController.delete',
-  'post /User/get' : 'UserController.get',
-  'get /User/getAll:' : 'UserController.getAll',
-  'post /User/getDbKeyForUser' : 'UserController.getDbKeyForUser',
-  'post /API/createStandardApi' : 'APIController.createStandardApi',
-  'post /API/createCustomApi' : 'APIController.createCustomApi',
-  'post /API/updateApi' : 'APIController.updateApi',
-  'delete /API/deleteApi' : 'APIController.deleteApi',
-  'post /API/startApi' : 'APIController.startApi',
-  'post /API/stopApi' : 'APIController.stopApi',
-  'post /API/getApiDetails' : 'APIController.getApiDetails'
+  'post   /ManagementApi/User/create'           : 'UserController.create',
+  'delete /ManagementApi/User/delete'           : 'UserController.delete',
+  'post   /ManagementApi/User/get'              : 'UserController.get',
+  'get    /ManagementApi/User/getAll:'          : 'UserController.getAll',
+  'post   /ManagementApi/User/getDbKeyForUser'  : 'UserController.getDbKeyForUser',
+  
+  'post   /ManagementApi/Api/createStandardApi' : 'APIController.createStandardApi',
+  'post   /ManagementApi/Api/createCustomApi'   : 'APIController.createCustomApi',
+  'post   /ManagementApi/Api/updateApi'         : 'APIController.updateApi',
+  'delete /ManagementApi/Api/deleteApi'         : 'APIController.deleteApi',
+  'post   /ManagementApi/Api/startApi'          : 'APIController.startApi',
+  'post   /ManagementApi/Api/stopApi'           : 'APIController.stopApi',
+  'post   /ManagementApi/Api/getApiDetails'     : 'APIController.getApiDetails'
 
 
   /***************************************************************************

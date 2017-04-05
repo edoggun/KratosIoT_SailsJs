@@ -36,6 +36,11 @@ module.exports.routes = {
     view: 'homepage'
   },
 
+  'post /GenericApi/pushData/:apiName?'                : 'APIController.pushData',
+  'get  /GenericApi/getLatestData/:apiName?'           : 'APIController.getLatestData',
+  'get  /GenericApi/getDataWithCount/:apiName?'        : 'APIController.getDataWithCount',
+  'get  /GenericApi/getDataWithTimeInterval/:apiName?' : 'APIController.getDataWithTimeInterval'
+
   /***************************************************************************
   *                                                                          *
   * Custom routes here...                                                    *
@@ -45,7 +50,7 @@ module.exports.routes = {
   * for configuration options and examples.                                  *
   *                                                                          *
   ***************************************************************************/
-  '/api': {
+  '/GenericApi': {
     view: 'gateway'
   } 
 

@@ -14,7 +14,6 @@ var Db = require('mongodb').Db,
 var admin = 'admin';
 var password = 'admin123';
 var dbServer = 'localhost';
-var dbServerPort = '27017';
 
 
 module.exports = {
@@ -26,6 +25,7 @@ module.exports = {
     var userName = req.headers.username;
     var timeStamp = new Date();
 
+    // Set std api port for each new user
     Collections.find({
         where: { isGenericApi: true },
         sort: 'port DESC'
@@ -39,25 +39,26 @@ module.exports = {
           port = 40000;
         }
 
+        // Generate dbkey for user db
         var dbKey = generator.generate({
           length: 16,
           numbers: true
         });
         
-        // Add user deinition to user collection in management db
+        // Add user definition to user collection in management db
         var admin_db = new Db(admin, new Server(dbServer, 27017));
         // Open management db
         admin_db.open(function(err, admin_db) {
           if (err) { return res.serverError(); }
 
           var adminDb = admin_db.admin();
-          // Authenticate using admin control over db
+          // Authenticate using admin control over admin db
           adminDb.authenticate(admin, password, function (err, result) {
             if (err) { return res.serverError(); }
 
             var collection = admin_db.collection("Users");
 
-            // Insert a single document
+            // Insert user definition
             collection.insert({userName: userName, status: 'ACT', dbKey: dbKey, port: port, timeStamp: timeStamp}, function (err) {
               if (err) { return res.serverError(); }
             });
@@ -77,11 +78,11 @@ module.exports = {
           if (err) { return res.serverError(); }
 
           var adminDb = user_db.admin();
-          // Authenticate using admin control over db
+          // Authenticate using admin control over user db
           adminDb.authenticate(admin, password, function (err, result) {
             if (err) { return res.serverError(); }
 
-            // Add user to the database
+            // Add user to the database with readWrite right
             user_db.addUser(userName, dbKey, {
                   roles: [
                     "readWrite"
@@ -97,7 +98,7 @@ module.exports = {
 
         });
 
-        // Creating user folder along with APIs and APPs folders under it
+        // Creating user directory along with APIs and APPs folders under it
         var dirAPIs = '../Users/' + userName + '/APIs';
         fs.ensureDirSync(dirAPIs);
         var dirAPPs = '../Users/' + userName + '/APPs';
@@ -109,13 +110,13 @@ module.exports = {
         var apiConnectionConfigFileLoc = apiFolderLoc + '/config/connections.js';
         var apiControllerLoc = apiFolderLoc + '/api/controllers/ApiController.js'
 
-        // If Api type is generic, then copy standard (ready) api that is located in main directory to user's APIs directory
+        // By default, copy standard (ready) api that is located in main directory to user's APIs directory
         fs.copy(stdApiFolderLoc, apiFolderLoc, function(err) {        
           if (err) { return res.serverError(); }    
 
-          // Wait for a second before finishing up, to ensure we have written the item to disk
+          // Wait for a second before setting config files
           setTimeout(function() {
-            // Change port number with the one we get from req in local file
+            // Change _PORT_NO with the one we set above in local.js file
             fs.readFile(apiLocalConfigFileLoc, 'utf8', function (err,data) {
               if (err) { return res.notFound(); }
                            
@@ -124,7 +125,7 @@ module.exports = {
               fs.writeFile(apiLocalConfigFileLoc, result, 'utf8', function (err) {
                 if (err) { return res.notFound(); }
 
-                // Change user name global param with the one we get from req
+                // Change _USER_NAME global param with the one we get from req
                 fs.readFile(apiControllerLoc, 'utf8', function (err,data) {
                   if (err) { return res.notFound(); }
                                             
@@ -134,7 +135,8 @@ module.exports = {
                     if (err) { return res.notFound(); }
 
                     return res.json({
-                      response: 'User: ' + userName + ' with dbKey: ' + dbKey + ' is successfully created'
+                      userName: userName,
+                      dbKey: dbKey
                     });
 
                   });
@@ -158,48 +160,55 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
-
     
+
+    return res.json({
+      response: "Not being used for the time being.."
+    });
 
   },
 
 
   /**
-   * `UserController.delete()`+
+   * `UserController.delete()`
    */
   delete: function (req, res) {
     var userName = req.headers.username;
 
-    //Soft delete from DB by updating the entry column ACT->DEACT
+    //Soft delete from DB by updating the status column ACT->DEACT
     var admin_db = new Db(admin, new Server(dbServer, 27017));
 
-    // Fetch a collection to insert document into
+    // Open admin db
     admin_db.open(function(err, admin_db) {
       if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
-      // Authenticate using admin control over db
+      // Authenticate using admin control over admin db
       adminDb.authenticate(admin, password, function (err, result) {
         if (err) { return res.serverError(); }
 
         var collection = admin_db.collection("Users");
-        // Update the document with an atomic operator
+        // Update the user status as DEACT
         collection.update({userName: userName}, {$set:{status: 'DEACT'}}, function(err, result) {
           if (err) { return res.notFound(); }
 
           admin_db.close();
 
           // Remove user from file system
-          var dir = "../Users/" + userName;
-          fs.removeSync(dir);
+          var userDirectory = "../Users/" + userName;
 
-          // Wait for 5 seconds before deleting User from file system properly
-          setTimeout(function() {
-            return res.json({
-              response: 'User ' + userName + ' is successfully removed'
-            });
+          fs.remove(userDirectory, function (err) {
+            if (err) { return res.serverError(); }
 
-           }, 500);
+            // Wait for 5 seconds to ensure that the user directory is deleted
+            setTimeout(function() {
+              return res.json({
+                response: 'User ' + userName + ' is successfully removed'
+              });
+
+             }, 500);
+
+          });
 
         });
 
@@ -216,28 +225,31 @@ module.exports = {
   get: function (req, res) {
     var userName = req.headers.username;
 
-    //Soft delete from DB by updating the entry column ACT->DEACT
+    // Get user info from user definitions table
     var admin_db = new Db(admin, new Server(dbServer, 27017));
 
-    // Fetch a collection to insert document into
+    // Open admin db
     admin_db.open(function(err, admin_db) {
       if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
-      // Authenticate using admin control over db
+      // Authenticate using admin control over admin db
       adminDb.authenticate(admin, password, function (err, result) {
         if (err) { return res.serverError(); }
 
-        // Peform a simple find and return one document
         var collection = admin_db.collection("Users");
 
+        // Find the user
         collection.findOne({userName: userName}, function(err, doc) {
           if (err) { return res.notFound(); }
 
           admin_db.close();
 
           return res.json({
-            response: doc
+            userName: userName,
+            status: doc.status,
+            port: doc.port,
+            timeStamp: doc.timeStamp
           });
 
         });
@@ -254,21 +266,21 @@ module.exports = {
    */
   getAll: function (req, res) {
 
-    //Soft delete from DB by updating the entry column ACT->DEACT
+    // Get all users info from user definitions table
     var admin_db = new Db(admin, new Server(dbServer, 27017));
 
-    // Fetch a collection to insert document into
+    // Open admin db
     admin_db.open(function(err, admin_db) {
       if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
-      // Authenticate using admin control over db
+      // Authenticate using admin control over admin db
       adminDb.authenticate(admin, password, function (err, result) {
         if (err) { return res.serverError(); }
 
-        // Peform a simple find and return one document
         var collection = admin_db.collection("Users");
 
+        // Find all users
         collection.find().toArray(function(err, docs) {
           if (err) { return res.notFound(); }
 
@@ -292,21 +304,21 @@ module.exports = {
   getDbKeyForUser: function (req, res) {
     var userName = req.headers.username;
 
-    //Soft delete from DB by updating the entry column ACT->DEACT
+    // Get dbKey for the user
     var admin_db = new Db(admin, new Server(dbServer, 27017));
 
-    // Fetch a collection to insert document into
+    // Open admin db
     admin_db.open(function(err, admin_db) {
       if (err) { return res.serverError(); }
 
       var adminDb = admin_db.admin();
-      // Authenticate using admin control over db
+      // Authenticate using admin control over admin db
       adminDb.authenticate(admin, password, function (err, result) {
         if (err) { return res.serverError(); }
 
-        // Peform a simple find and return one document
         var collection = admin_db.collection("Users");
 
+        // Find the user
         collection.findOne({userName: userName}, function(err, doc) {
           if (err) { return res.notFound(); }
 

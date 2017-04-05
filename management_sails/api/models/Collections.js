@@ -15,7 +15,9 @@ module.exports = {
 
   	port : { type: 'integer'},
 
-  	isGenericApi : { type: 'boolean'}
+  	isGenericApi : { type: 'boolean'},
+
+  	createdAt : { type: 'date'}
 
   },
   

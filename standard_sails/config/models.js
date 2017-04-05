@@ -28,9 +28,6 @@ module.exports.models = {
   *                                                                          *
   ***************************************************************************/
   migrate: 'safe' ,
-  connection: 'mongodbServer' ,
-  'post /api/:apiName?': 'APIController.pushData',
-  'get  /api/:apiName?': 'APIController.getLatestData',
-  'get  /api/:apiName?': 'APIController.getDataWithCount',
-  'get /api/:apiName?': 'APIController.getDataWithTimeInterval'
+  connection: 'mongodbServer'
+  
 };
