@@ -292,9 +292,9 @@ module.exports = {
           var stringData2 = stringData[2].toString().split("       ");
           var pid = stringData[1].toString().split("\n");
           */
-          var stringData = stdout.toString().split("LISTENING");
+          var stringData = string.split("LISTENING");
           var stringData2 = stringData[1].toString().split("   ");
-          var stringData3 = stringData2[0].toString().split("     ");
+          var stringData3 = stringData2[1].toString().split("  ");
           var pid = stringData3[1].toString();
 
           exec('kill -9 ' + pid, function(err, stdout, stderr) {
@@ -395,9 +395,9 @@ module.exports = {
           var stringData2 = stringData[2].toString().split("       ");
           var pid = stringData[1].toString().split("\n");
           */
-          var stringData = stdout.toString().split("LISTENING");
+          var stringData = string.split("LISTENING");
           var stringData2 = stringData[1].toString().split("   ");
-          var stringData3 = stringData2[0].toString().split("     ");
+          var stringData3 = stringData2[1].toString().split("  ");
           var pid = stringData3[1].toString();
 
           exec('kill -9 ' + pid, function(err, stdout, stderr) {
@@ -535,9 +535,9 @@ module.exports = {
           var stringData2 = stringData[2].toString().split("       ");
           var pid = stringData[1].toString().split("\n");
           */
-          var stringData = stdout.toString().split("LISTENING");
+          var stringData = string.split("LISTENING");
           var stringData2 = stringData[1].toString().split("   ");
-          var stringData3 = stringData2[0].toString().split("     ");
+          var stringData3 = stringData2[1].toString().split("  ");
           var pid = stringData3[1].toString();
 
           exec('kill -9 ' + pid, function(err, stdout, stderr) {

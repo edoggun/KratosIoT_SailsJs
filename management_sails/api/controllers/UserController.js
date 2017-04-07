@@ -161,6 +161,14 @@ module.exports = {
    */
   update: function (req, res) {
     
+    var string = 'unix  2      [ ACC ]     STREAM     LISTENING     193694   /tmp/mongodb-27017.sock';
+
+    var stringData = string.split("LISTENING");
+    var stringData2 = stringData[1].toString().split("   ");
+    var stringData3 = stringData2[1].toString().split("  ");
+    var pid = stringData3[1].toString();
+
+    console.log('A'+stringData3[1]+'A');
 
     return res.json({
       response: "Not being used for the time being.."
