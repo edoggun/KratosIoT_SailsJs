@@ -24,6 +24,7 @@
     "grunt-sync": "0.5.2",
     "include-all": "^1.0.0",
     "mongodb": "^2.2.24",
+    "mongojs": "^2.2.2",
     "node-cmd": "^2.0.0",
     "path": "^0.12.7",
     "rc": "1.0.1",

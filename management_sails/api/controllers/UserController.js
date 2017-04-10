@@ -9,7 +9,8 @@
 const fs = require('fs-extra');
 const generator = require('generate-password');
 const Db = require('mongodb').Db,
-    Server = require('mongodb').Server;
+    Server = require('mongodb').Server,
+    MongoClient = require('mongodb').MongoClient;
     
 const admin = 'admin';
 const password = 'admin123';
@@ -30,6 +31,7 @@ module.exports = {
         where: { isGenericApi: true },
         sort: 'port DESC'
       }).exec(function(err, collections) {
+        if (err) { return res.serverError(); }
 
         var port;
         if (collections.length > 0) {
@@ -107,11 +109,10 @@ module.exports = {
         var stdApiFolderLoc = '../standard_sails';
         var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
         var apiLocalConfigFileLoc = apiFolderLoc + '/config/local.js';
-        var apiConnectionConfigFileLoc = apiFolderLoc + '/config/connections.js';
-        var apiControllerLoc = apiFolderLoc + '/api/controllers/ApiController.js'
+        var apiControllerLoc = apiFolderLoc + '/api/controllers/APIController.js'
 
         // By default, copy standard (ready) api that is located in main directory to user's APIs directory
-        fs.copy(stdApiFolderLoc, apiFolderLoc, function(err) {        
+        fs.copy(stdApiFolderLoc, apiFolderLoc, function(err) {      
           if (err) { return res.serverError(); }    
 
           // Wait for a second before setting config files
@@ -147,7 +148,7 @@ module.exports = {
 
             });
 
-          }, 1000);    
+          }, 5000);    
 
         });  
 
@@ -160,15 +161,59 @@ module.exports = {
    * `UserController.update()`
    */
   update: function (req, res) {
-    
-    var string = 'unix  2      [ ACC ]     STREAM     LISTENING     193694   /tmp/mongodb-27017.sock';
 
-    var stringData = string.split("LISTENING");
-    var stringData2 = stringData[1].toString().split("   ");
-    var stringData3 = stringData2[1].toString().split("  ");
-    var pid = stringData3[1].toString();
 
-    console.log('A'+stringData3[1]+'A');
+    var admin_db = new Db(admin, new Server(dbServer, 27017));
+
+    // Open admin db
+    admin_db.open(function(err, admin_db) {
+      if (err) { return res.serverError(); }
+
+      var adminDb = admin_db.admin();
+      // Authenticate using admin control over admin db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return res.serverError(); }
+        
+        var collection = admin_db.collection('Users');
+
+        // Insert user definition
+        collection.insert({userName: "dogukan", dbKey: 'dogukan123'}, function (err) {
+          if (err) { return res.serverError(); }
+        });
+
+        admin_db.close();     
+
+      });
+
+    });
+
+    var userDB = 'dogukan';
+    var user_db = new Db(userDB, new Server(dbServer, 27017));
+
+    // Open user db
+    user_db.open(function(err, user_db) {
+      if (err) { return res.serverError(); }
+
+      var adminDb = user_db.admin();
+      // Authenticate using admin control over user db
+      adminDb.authenticate(admin, password, function (err, result) {
+        if (err) { return res.serverError(); }
+
+        // Add user to the database with readWrite right
+        user_db.addUser('dogukan', 'dogukan123', {
+              roles: [
+                "readWrite"
+              ]   
+        }, function(err, result) {
+            if (err) { return res.serverError(); }
+                  
+            user_db.close();
+          
+        });
+
+      });
+
+    });
 
     return res.json({
       response: "Not being used for the time being.."

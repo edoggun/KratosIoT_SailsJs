@@ -15,7 +15,7 @@ const Db = require('mongodb').Db,
 const admin = 'admin';
 const password = 'admin123';
 const dbServer = 'localhost';
-
+const host = '142.133.137.250';
 
 module.exports = {
 	
@@ -104,7 +104,7 @@ module.exports = {
 
               }, 1000);
 
-              // Wait for 2 seconds to start file operations
+              // Wait for 1 second to start file operations
               setTimeout(function() {
                 var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
                 var localUserDiskDbLoc = '.tmp/userDiskDb.db';
@@ -113,35 +113,39 @@ module.exports = {
                 // Copy user specific userDiskDb to user's std api location for further usage by std api
                 fse.copy(localUserDiskDbLoc, userDiskDbLoc, function(err) {     
                   if (err) { return res.serverError(); }
-
-                  // Wait for 5 seconds to make sure file operations are completed
+                  
+                  // Wait for 2 seconds to make sure file operations are completed
                   setTimeout(function() {
 
                     // Find out if the user's std api's port is being used or not
-                    exec('netstat -a | grep LISTENING | grep ' + port.toString(), function(err, stdout, stderr) {
+                    exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
                     //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { //For windows
-
                       // If it is not being used, then lift the std api for the user by default after creation
                       if (stdout == "") {
-                        exec('sails lift', { cwd: '../Users/' + userName + '/APIs/standard_sails' }, function(err, stdout, stderr) {
-                          
+                        exec('sails lift', { cwd: apiFolderLoc }, function(err, stdout, stderr) {
+
                         });
-                          
-                        return res.json({
-                          collection: apiName,
-                          userName: userName,
-                          apiURL:  'http://localhost:' + port.toString() + '/GenericApi'
-                        });
-                        
+
+                        // Wait for 5 seconds to make sure api is up
+                        setTimeout(function() {
+
+                          return res.json({
+                            collection: apiName,
+                            userName: userName,
+                            apiURL:  'http://' + host + ':' + port.toString() + '/GenericApi'
+                          });
+
+                        }, 5000);
+                                                  
                       }
 
                     });
 
-                  }, 5000);
+                  }, 2000);
                     
                 });
 
-              }, 2000);
+              }, 3000);
 
             });
 
@@ -241,7 +245,7 @@ module.exports = {
                     return res.json({
                       collection: apiName,
                       userName: userName,
-                      apiURL: 'http://localhost:' + port.toString()
+                      apiURL: 'http://' + host + ':' + port.toString()
                     });
 
                   }, 5000); 
@@ -282,7 +286,7 @@ module.exports = {
       
       // Check if the API is running or not
       var exec = require('child_process').exec;
-      exec('netstat -a | grep LISTENING | grep ' + port.toString(), function(err, stdout, stderr) {
+      exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
       //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { //For windows
 
         // If API is running, first stop the API to be able to update it properly
@@ -292,10 +296,10 @@ module.exports = {
           var stringData2 = stringData[2].toString().split("       ");
           var pid = stringData[1].toString().split("\n");
           */
-          var stringData = string.split("LISTENING");
-          var stringData2 = stringData[1].toString().split("   ");
-          var stringData3 = stringData2[1].toString().split("  ");
-          var pid = stringData3[1].toString();
+          var stringData = stdout.split("LISTEN");
+          var stringData2 = stringData[1].toString().split("      ");
+          var stringData3 = stringData2[1].toString().split("/");
+          var pid = stringData3[0].toString();
 
           exec('kill -9 ' + pid, function(err, stdout, stderr) {
           //exec('taskkill /pid ' + pid[0].toString() + ' /F', function(err, stdout, stderr) { //For windows
@@ -385,7 +389,7 @@ module.exports = {
 
       // Check if the API is running or not
       var exec = require('child_process').exec;
-      exec('netstat -a | grep LISTENING | grep ' + port.toString(), function(err, stdout, stderr) {
+      exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
       //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { // For windows
 
         // If API is running, first stop the API to be able to delete it properly
@@ -395,10 +399,10 @@ module.exports = {
           var stringData2 = stringData[2].toString().split("       ");
           var pid = stringData[1].toString().split("\n");
           */
-          var stringData = string.split("LISTENING");
-          var stringData2 = stringData[1].toString().split("   ");
-          var stringData3 = stringData2[1].toString().split("  ");
-          var pid = stringData3[1].toString();
+          var stringData = stdout.split("LISTEN");
+          var stringData2 = stringData[1].toString().split("      ");
+          var stringData3 = stringData2[1].toString().split("/");
+          var pid = stringData3[0].toString();
 
           exec('kill -9 ' + pid, function(err, stdout, stderr) {
           //exec('taskkill /pid ' + pid[0].toString() + ' /F', function(err, stdout, stderr) { // For windows
@@ -474,7 +478,7 @@ module.exports = {
       var port = collection.port;
 
       // Check if the app is up or not
-      exec('netstat -a | grep LISTENING | grep ' + port.toString(), function(err, stdout, stderr) {
+      exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
       //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { // For Windows
 
         // If it is already up, then return with a proper message
@@ -522,7 +526,7 @@ module.exports = {
 
       // Check if the app is up or not
       var exec = require('child_process').exec;
-      exec('netstat -a | grep LISTENING | grep ' + port.toString(), function(err, stdout, stderr) {
+      exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
       //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { // For Windows
 
         // If it is already not up, then return with a proper message
@@ -535,10 +539,10 @@ module.exports = {
           var stringData2 = stringData[2].toString().split("       ");
           var pid = stringData[1].toString().split("\n");
           */
-          var stringData = string.split("LISTENING");
-          var stringData2 = stringData[1].toString().split("   ");
-          var stringData3 = stringData2[1].toString().split("  ");
-          var pid = stringData3[1].toString();
+          var stringData = stdout.split("LISTEN");
+          var stringData2 = stringData[1].toString().split("      ");
+          var stringData3 = stringData2[1].toString().split("/");
+          var pid = stringData3[0].toString();
 
           exec('kill -9 ' + pid, function(err, stdout, stderr) {
           //exec('taskkill /pid ' + pid[0].toString() + ' /F', function(err, stdout, stderr) { // For Windows
@@ -579,7 +583,7 @@ module.exports = {
       var port = collection.port;
 
       // Check if the app is up or not
-      exec('netstat -a | grep LISTENING | grep ' + port.toString(), function(err, stdout, stderr) {
+      exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
       //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { // For Windows
 
         var apiStatus;

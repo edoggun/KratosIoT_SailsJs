@@ -44,46 +44,35 @@ module.exports = {
       // Get API collection name 
       var colName = req.param('apiName');
 
-        // Authenticate username
-        if(usernameCheck(username)) {
-            // Declare database instance            
-            var db = new Db('MongoDatabase', new Server('localhost', 27017));
-            // Find collection by name
-            UserCollection.findOne({collectionName: colName}).exec(function(err, doc) {
-                
-                if(!doc) { return res.json({ response: colNotFound }) }
-                    
-                    // Open database
-                    db.open(function(err, db) {
-                    // Authenticate user to mongo database
-                    db.authenticate(username, dbkey, function(err, res) {
+      // Authenticate username
+      if(usernameCheck(username)) {
+            // Connect database with authentication            
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/gizemdb", function(err, db) {
 
                     if (err) { return res.json({ response: dbAuthErr }) }
-                          // Declare collection instance
-                          var api_collection = db.collection(colName);
-                          // Insert data to collection
-                          api_collection.insert(req.body, function (err, result) {
-                              if(err) { return res.serverError(err); }
-                              else {
-                                  return res.json({
-                                      response: records 
-                                  })
-                              }
-                            });
-                      });
-                    
-                  });
+                          
+                    // Declare collection instance
+                    var api_collection = db.collection(colName);
+                    // Insert data to collection
+                    api_collection.insert(req.body, function (err, result) {
 
-           });
-            // Close database connection
-            db.close();
+                        if(err) { return res.serverError(err); }
+
+                        else {
+                            return res.json({
+                                response: records 
+                            })
+                        }
+                        db.close();
+                      });
+            });
         }
 
-        else {
+      else {
           return res.json( {
             response: unameErr 
           })
-        }
+      }
     },
 
   /**
@@ -100,17 +89,10 @@ module.exports = {
 
         // Authenticate username
         if(usernameCheck(username)) {
-            // Declare database instance            
-            var db = new Db('MongoDatabase', new Server('localhost', 27017));
-            // Find latest data in the collection 
-            UserCollection.findOne({collectionName: colName}).exec(function(err, doc) {
-                
-                if(!doc) { return res.json({ response: colNotFound }) }
+            // Connect database with authentication            
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/MongoDatabase", function(err, db) {
                     
-                    // Open database
-                    db.open(function(err, db) {
-                        // Authenticate user to mongo database
-                        db.authenticate(username, dbkey, function(err, auth) {
+                    if (err) { return res.json({ response: dbAuthErr }) }
 
                               if (err) { return res.json({ response: dbAuthErr }) }
                               // Declare collection instance
@@ -126,12 +108,9 @@ module.exports = {
                                                   response: records 
                                               })
                                           }
+                                          db.close();
                                       });
-                          });
-                    });
-           });
-            // Close database connection
-            db.close();
+            });
         }
 
         else {
@@ -165,15 +144,8 @@ module.exports = {
 
         // Authenticate username
         if(usernameCheck(username)) {
-            // Declare database instance            
-            var db = new Db('MongoDatabase', new Server('localhost', 27017));
-            UserCollection.findOne({collectionName: colName}).exec(function(err, doc) {
-                
-                if(!doc) { return res.json({ response: colNotFound }) }
-
-                    db.open(function(err, db) {
-                    // Authenticate user to mongo database
-                    db.authenticate(username, dbkey, function(err, auth) {
+            // Connect database with authentication             
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/MongoDatabase", function(err, db) {
 
                      if (err) { return res.json({ response: dbAuthErr }) }
                           // Declare collection instance
@@ -192,22 +164,17 @@ module.exports = {
                                               return res.json({
                                                   response: records 
                                               })
-                                          } 
+                                          }
+                            db.close(); 
                             }); 
-
-                     });
-
-                   });
-
-             });
-
-            db.close();
-           }
-           else {
-              return res.json( {
-               response: unameErr 
-                  });
-              }
+            });
+                               
+       }
+       else {
+          return res.json( {
+           response: unameErr 
+              });
+          }
   },
 
 
@@ -227,17 +194,9 @@ module.exports = {
 
         // Authenticate username
         if(usernameCheck(username)) {
-            // Declare database instance            
-            var db = new Db('MongoDatabase', new Server('localhost', 27017));
-            // Find collection by name
-            UserCollection.findOne({collectionName: colName}).exec(function(err, doc) {
-                
-                if(!doc) { return res.json({ response: colNotFound }) }
-                    
-                    // Open database
-                    db.open(function(err, db) {
-                        // Authenticate user to mongo database
-                        db.authenticate(username, dbkey, function(err, auth) {
+            // Connect database with authentication             
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/MongoDatabase", function(err, db) {
+            
 
                         if (err) { return res.json({ response: dbAuthErr }) }
                               // Declare collection instance
@@ -249,17 +208,12 @@ module.exports = {
 
                                       else {
                                               return res.json({
-                                                  response: records 
+                                                 response: records 
                                               })
                                           }
-                                  });
-                        });
-                    
-                    });
-
-                });
-            // Close database connection
-            db.close();
+                                      db.close();
+                                      });
+            });            
         }
 
         else {
@@ -269,4 +223,3 @@ module.exports = {
         }
   }
 };
-

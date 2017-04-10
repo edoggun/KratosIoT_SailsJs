@@ -4,21 +4,21 @@
     "collections": [
       {
         "userName": "dodo",
-        "collectionName": "Device24",
+        "collectionName": "Device1",
         "port": 40000,
         "isGenericApi": true,
-        "createdAt": "2017-04-04T08:21:07.183Z",
-        "updatedAt": "2017-04-04T08:21:07.192Z",
+        "createdAt": "2017-04-09T18:31:56.698Z",
+        "updatedAt": "2017-04-09T18:31:56.723Z",
         "id": 1
       },
       {
         "userName": "dodo",
-        "collectionName": "Device111",
+        "collectionName": "Device2",
         "port": 45000,
         "isGenericApi": false,
-        "createdAt": "2017-04-04T11:37:20.411Z",
-        "updatedAt": "2017-04-04T11:37:20.425Z",
-        "id": 2
+        "createdAt": "2017-04-09T19:32:37.299Z",
+        "updatedAt": "2017-04-09T19:32:37.370Z",
+        "id": 3
       }
     ],
     "user": []
@@ -127,7 +127,7 @@
   "counters": {
     "api": {},
     "collections": {
-      "id": 2
+      "id": 3
     },
     "user": {}
   }

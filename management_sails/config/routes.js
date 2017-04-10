@@ -38,8 +38,8 @@ module.exports.routes = {
 
   'post   /ManagementApi/User/create'           : 'UserController.create',
   'delete /ManagementApi/User/delete'           : 'UserController.delete',
-  'post   /ManagementApi/User/get'              : 'UserController.get',
-  'get    /ManagementApi/User/getAll:'          : 'UserController.getAll',
+  'get    /ManagementApi/User/get'              : 'UserController.get',
+  'get    /ManagementApi/User/getAll'           : 'UserController.getAll',
   'post   /ManagementApi/User/getDbKeyForUser'  : 'UserController.getDbKeyForUser',
   
   'post   /ManagementApi/Api/createStandardApi' : 'APIController.createStandardApi',
