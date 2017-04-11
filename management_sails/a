@@ -1,0 +1,28 @@
+
+[32minfo: [39mStarting app...
+
+[32minfo: [39m
+[32minfo: [39m               .-..-.
+[32minfo: [39m
+[32minfo: [39m   Sails              <|    .-..-.
+[32minfo: [39m   v0.12.13            |\
+[32minfo: [39m                      /|.\
+[32minfo: [39m                     / || \
+[32minfo: [39m                   ,'  |'  \
+[32minfo: [39m                .-'.-==|/_--'
+[32minfo: [39m                `--'-------' 
+[32minfo: [39m   __---___--___---___--___---___--___
+[32minfo: [39m ____---___--___---___--___---___--___-__
+[32minfo: [39m
+[32minfo: [39mServer lifted in `/Kratos_IoT/KratosIoT_SailsJs/management_sails`
+[32minfo: [39mTo see your app, visit http://localhost:1337
+[32minfo: [39mTo shut down Sails, press <CTRL> + C at any time.
+[37m[39m
+[34mdebug: [39m-------------------------------------------------------
+[34mdebug: [39m:: Mon Apr 10 2017 09:28:46 GMT-0400 (EDT)
+[37m[39m
+[34mdebug: [39mEnvironment : development
+[34mdebug: [39mPort        : 1337
+[34mdebug: [39m-------------------------------------------------------
+[32minfo: [39mGruntfile could not be found.
+[32minfo: [39m(no grunt tasks will be run.)

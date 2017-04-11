@@ -135,9 +135,17 @@ module.exports = {
                   fs.writeFile(apiControllerLoc, result, 'utf8', function (err) {
                     if (err) { return res.notFound(); }
 
-                    return res.json({
-                      userName: userName,
-                      dbKey: dbKey
+                    var createdAt = new Date();
+
+                    // Create an entry for the user's collectionName and port no in Collections localDiskDb
+                    Collections.create({userName: userName, collectionName: "apiName", port: port, isGenericApi: true, createdAt: createdAt}).exec(function (err, result){
+                      if (err) { return res.serverError(err); }
+
+                      return res.json({
+                        userName: userName,
+                        dbKey: dbKey
+                      });
+
                     });
 
                   });
@@ -163,57 +171,7 @@ module.exports = {
   update: function (req, res) {
 
 
-    var admin_db = new Db(admin, new Server(dbServer, 27017));
-
-    // Open admin db
-    admin_db.open(function(err, admin_db) {
-      if (err) { return res.serverError(); }
-
-      var adminDb = admin_db.admin();
-      // Authenticate using admin control over admin db
-      adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return res.serverError(); }
-        
-        var collection = admin_db.collection('Users');
-
-        // Insert user definition
-        collection.insert({userName: "dogukan", dbKey: 'dogukan123'}, function (err) {
-          if (err) { return res.serverError(); }
-        });
-
-        admin_db.close();     
-
-      });
-
-    });
-
-    var userDB = 'dogukan';
-    var user_db = new Db(userDB, new Server(dbServer, 27017));
-
-    // Open user db
-    user_db.open(function(err, user_db) {
-      if (err) { return res.serverError(); }
-
-      var adminDb = user_db.admin();
-      // Authenticate using admin control over user db
-      adminDb.authenticate(admin, password, function (err, result) {
-        if (err) { return res.serverError(); }
-
-        // Add user to the database with readWrite right
-        user_db.addUser('dogukan', 'dogukan123', {
-              roles: [
-                "readWrite"
-              ]   
-        }, function(err, result) {
-            if (err) { return res.serverError(); }
-                  
-            user_db.close();
-          
-        });
-
-      });
-
-    });
+    // For test purposes..
 
     return res.json({
       response: "Not being used for the time being.."
@@ -378,6 +336,7 @@ module.exports = {
           admin_db.close();
 
           return res.json({
+            userName: userName,
             dbKey: doc.dbKey
           });
 

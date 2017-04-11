@@ -47,14 +47,14 @@ module.exports = {
       // Authenticate username
       if(usernameCheck(username)) {
             // Connect database with authentication            
-            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/gizemdb", function(err, db) {
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/" + username, function(err, db) {
 
                     if (err) { return res.json({ response: dbAuthErr }) }
                           
                     // Declare collection instance
                     var api_collection = db.collection(colName);
                     // Insert data to collection
-                    api_collection.insert(req.body, function (err, result) {
+                    api_collection.insert(req.body, function (err, records) {
 
                         if(err) { return res.serverError(err); }
 
@@ -90,7 +90,7 @@ module.exports = {
         // Authenticate username
         if(usernameCheck(username)) {
             // Connect database with authentication            
-            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/MongoDatabase", function(err, db) {
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/" + username, function(err, db) {
                     
                     if (err) { return res.json({ response: dbAuthErr }) }
 
@@ -145,7 +145,7 @@ module.exports = {
         // Authenticate username
         if(usernameCheck(username)) {
             // Connect database with authentication             
-            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/MongoDatabase", function(err, db) {
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/" + username, function(err, db) {
 
                      if (err) { return res.json({ response: dbAuthErr }) }
                           // Declare collection instance
@@ -195,7 +195,7 @@ module.exports = {
         // Authenticate username
         if(usernameCheck(username)) {
             // Connect database with authentication             
-            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/MongoDatabase", function(err, db) {
+            MongoClient.connect("mongodb://" + username + ":" + dbkey + "@127.0.0.1:27017/" + username, function(err, db) {
             
 
                         if (err) { return res.json({ response: dbAuthErr }) }

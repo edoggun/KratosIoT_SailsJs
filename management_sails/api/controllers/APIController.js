@@ -10,7 +10,8 @@ const unzip = require('unzip');
 const fs = require('fs');
 const fse = require('fs-extra');
 const Db = require('mongodb').Db,
-    Server = require('mongodb').Server;
+    Server = require('mongodb').Server,
+    ObjectID = require('mongodb').ObjectID;
 
 const admin = 'admin';
 const password = 'admin123';
@@ -66,11 +67,19 @@ module.exports = {
 
             admin_db.close();
 
-            var createdAt = new Date();
-
-            // Create an entry for the user's collectionName and port no in Collections localDiskDb
-            Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: true, createdAt: createdAt}).exec(function (err, result){
+            // Update collectionName if there is an std api entry for the user in localDiskDb - for the first std api creation
+            Collections.update({userName: userName, collectionName: "apiName", isGenericApi: true}, {collectionName: apiName, createdAt: timeStamp}).exec(function afterwards(err, updated) {
               if (err) { return res.serverError(err); }
+
+              // If there is no entry updated, then it means this is a new collection - for latter collections
+              if (updated == "") {
+              	// Create an entry for the user's collectionName and port no in Collections localDiskDb
+	            Collections.create({userName: userName, collectionName: apiName, port: port, isGenericApi: true, createdAt: timeStamp}).exec(function (err, result) {
+	           	  if (err) { return res.serverError(err); }
+	              
+	          	});
+
+              }
 
               // Wait for a second to make sure entry is created
               setTimeout(function() {
@@ -96,6 +105,62 @@ module.exports = {
                         })
                       }
 
+                      // Wait for 1 second to start file operations
+		              setTimeout(function() {
+
+		                var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
+		                var localUserDiskDbLoc = '.tmp/userDiskDb.db';
+		                var userDiskDbLoc = apiFolderLoc + '/.tmp/userDiskDb.db';
+
+		                // Copy user specific userDiskDb to user's std api location for further usage by std api
+		                fse.copy(localUserDiskDbLoc, userDiskDbLoc, function(err) {     
+		                  if (err) { return res.serverError(); }
+		                  
+		                  // Wait for 2 seconds to make sure file operations are completed
+		                  setTimeout(function() {
+
+		                    // Find out if the user's std api's port is being used or not
+		                    exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
+		                    //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { //For windows
+		                      
+		                      // If it is already up, then return response
+        					  if (stdout != "") { 
+        					  
+        					  	return res.json({
+		                            collection: apiName,
+		                            userName: userName,
+		                            apiURL:  'http://' + host + ':' + port.toString() + '/GenericApi'
+		                          });
+        					 
+        					  }
+
+		                      // If it is not being used, then lift the std api for the user by default after creation
+		                      if (stdout == "") {
+		                        exec('sails lift', { cwd: apiFolderLoc }, function(err, stdout, stderr) {
+
+		                        });
+
+		                        // Wait for 5 seconds to make sure api is up
+		                        setTimeout(function() {
+
+		                          return res.json({
+		                            collection: apiName,
+		                            userName: userName,
+		                            apiURL:  'http://' + host + ':' + port.toString() + '/GenericApi'
+		                          });
+
+		                        }, 3000);
+		                                                  
+		                      }
+
+		                    });
+
+		                  }, 2000);
+		                    
+		                });
+
+		              }, 2000);
+
                     }, 1000);
 
                   });
@@ -103,49 +168,6 @@ module.exports = {
                 });       
 
               }, 1000);
-
-              // Wait for 1 second to start file operations
-              setTimeout(function() {
-                var apiFolderLoc = '../Users/' + userName + '/APIs/standard_sails';
-                var localUserDiskDbLoc = '.tmp/userDiskDb.db';
-                var userDiskDbLoc = apiFolderLoc + '/.tmp/userDiskDb.db';
-
-                // Copy user specific userDiskDb to user's std api location for further usage by std api
-                fse.copy(localUserDiskDbLoc, userDiskDbLoc, function(err) {     
-                  if (err) { return res.serverError(); }
-                  
-                  // Wait for 2 seconds to make sure file operations are completed
-                  setTimeout(function() {
-
-                    // Find out if the user's std api's port is being used or not
-                    exec('sudo netstat -plnt | grep :' + port.toString(), function(err, stdout, stderr) {
-                    //exec('netstat -ano | find "LISTENING" | find "' + port.toString() + '"', function(err, stdout, stderr) { //For windows
-                      // If it is not being used, then lift the std api for the user by default after creation
-                      if (stdout == "") {
-                        exec('sails lift', { cwd: apiFolderLoc }, function(err, stdout, stderr) {
-
-                        });
-
-                        // Wait for 5 seconds to make sure api is up
-                        setTimeout(function() {
-
-                          return res.json({
-                            collection: apiName,
-                            userName: userName,
-                            apiURL:  'http://' + host + ':' + port.toString() + '/GenericApi'
-                          });
-
-                        }, 5000);
-                                                  
-                      }
-
-                    });
-
-                  }, 2000);
-                    
-                });
-
-              }, 3000);
 
             });
 
@@ -209,11 +231,10 @@ module.exports = {
           var thingName = params.thingName ? params.thingName : "";
           var appApiName = params.appApiName ? params.appApiName : "";
           var appName = params.appName ? params.appName : "";
-          var date = new Date();
 
           // Insert api definition to definitions table
           api_collection.insert({apiName: apiName, apiType: apiType, gatewayName: gatewayName, deviceName: deviceName, sensorName: sensorName, thingName: thingName,
-                                 appApiName: appApiName, appName: appName, userName: userName, isGenericApi: false, timeStamp: date, status: 'ACT'}, 
+                                 appApiName: appApiName, appName: appName, userName: userName, isGenericApi: false, timeStamp: createdAt, status: 'ACT'}, 
                                  function (err, result) {
                 
             if (err) { return res.serverError(); } 
@@ -248,7 +269,7 @@ module.exports = {
                       apiURL: 'http://' + host + ':' + port.toString()
                     });
 
-                  }, 5000); 
+                  }, 3000); 
                   
                 });
 
@@ -347,9 +368,9 @@ module.exports = {
                           response: apiName + ' API has successfully been updated'
                         });
 
-                      }, 5000);
+                      }, 3000);
                       
-                    }, 5000);
+                    }, 3000);
 
                   });
 
@@ -442,7 +463,7 @@ module.exports = {
                     response: apiName + 'has successfully been deleted'
                   });
 
-                }, 10000);
+                }, 5000);
 
               });
 
@@ -497,7 +518,7 @@ module.exports = {
               response: apiName + ' API has successfully been started'
             });
 
-          }, 5000);
+          }, 3000);
           
         }
 
@@ -556,7 +577,7 @@ module.exports = {
               response: apiName + ' API has successfully been stopped'
             });
 
-          }, 5000);
+          }, 3000);
 
         }
 
@@ -623,10 +644,11 @@ module.exports = {
               }
 
               // Get the latest message in the requested collection
-              collection.find().sort({timeStamp: -1}).limit(1).toArray(function(err, doc) {
+              collection.find().sort({_id: -1}).limit(1).toArray(function(err, doc) {
                 if (err) { return res.notFound(); }
 
-                var latestSentData = doc;
+                var objectId = new ObjectID(doc._id);
+                var latestSentDate = objectId.getTimestamp().toString();
 
                 user_db.close();
 
@@ -634,8 +656,8 @@ module.exports = {
                   apiName: apiName,
                   apiStatus: apiStatus,
                   collectionDocCount: collectionDocCount,
-                  collectionSize: collectionSize,
-                  latestSentData: latestSentData
+                  collectionSize: collectionSize + ' byte',
+                  latestSentDate: latestSentDate
                 });
 
               });              

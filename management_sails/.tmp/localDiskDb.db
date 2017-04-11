@@ -7,17 +7,17 @@
         "collectionName": "Device1",
         "port": 40000,
         "isGenericApi": true,
-        "createdAt": "2017-04-09T18:31:56.698Z",
-        "updatedAt": "2017-04-09T18:31:56.723Z",
+        "createdAt": "2017-04-11T08:30:58.431Z",
+        "updatedAt": "2017-04-11T08:30:58.485Z",
         "id": 1
       },
       {
         "userName": "dodo",
-        "collectionName": "Device2",
+        "collectionName": "Device10",
         "port": 45000,
         "isGenericApi": false,
-        "createdAt": "2017-04-09T19:32:37.299Z",
-        "updatedAt": "2017-04-09T19:32:37.370Z",
+        "createdAt": "2017-04-11T08:36:48.563Z",
+        "updatedAt": "2017-04-11T08:36:48.623Z",
         "id": 3
       }
     ],
